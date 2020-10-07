@@ -1,0 +1,19 @@
+body {
+	margin: 0;
+	padding: 0;
+}
+html, body, #root {
+	height: 100%;
+	width: 100%;
+}
+
+#root {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	background-color: #303846;
+}
+#_canvas {
+	background-color: #fff;
+	box-shadow: 0 0 50px 0 rgba(255,255,255,.5);
+}
