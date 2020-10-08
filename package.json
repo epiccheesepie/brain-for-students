@@ -1,5 +1,5 @@
 {
-  "name": "lab1",
+  "name": "network",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -9,7 +9,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "brain.js": "^2.0.0-beta.2",
     "file-system": "^2.2.2",
     "mathjs": "^7.5.0",
     "pngjs": "^5.0.0"
