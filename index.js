@@ -7,9 +7,9 @@ class NeuralNetwork {
 		this.layers = layers;
 	}
 
-	init(input_cnt, output_cnt, cnt_hidden, cnt_hidden_neurons) { //начальная инициализация
-		for (let i=0;i<cnt_hidden;i++) {
-			let lay = new Layer(cnt_hidden_neurons);
+	init({ input_cnt, output_cnt, layers_cnt, layers_neurons_cnt }) { //начальная инициализация
+		for (let i=0;i<layers_cnt;i++) {
+			let lay = new Layer(layers_neurons_cnt);
 			lay.init(input_cnt);
 			this.layers.push(lay);
 			input_cnt = lay.cnt;
@@ -52,15 +52,15 @@ class NeuralNetwork {
 		this.layers = layers;
 	}
 
-	train(arr, q) { //тренировка сети
-		for(let i=0;i<q;i++) {
-			arr.forEach(val => {
-				this._backProp(val.input,val.output);
+	train({ data, repeat_cnt, speed }) { //тренировка сети
+		for(let i=0;i<repeat_cnt;i++) {
+			data.forEach(val => {
+				this._backProp(val.input,val.output,speed);
 			});
 		}
 	}
 
-	_backProp(inputs, outputs) { //back propagation
+	_backProp(inputs, outputs, speed) { //back propagation
 		const train_outputs = this.run(inputs);	
 
 		const layers = this.layers; //слои сети
@@ -92,7 +92,7 @@ class NeuralNetwork {
 				for(let j=0;j<lay.weights[i].length;j++) {
 					let w = lay.weights[i][j];
 					let f = lay.activates[i]*(1-lay.activates[i]);
-					weights_x.push(w+errors[index][i]*f*inputs[j]*0.9);
+					weights_x.push(w+errors[index][i]*f*inputs[j]*speed);
 				}
 				weights.push(weights_x);
 			}
@@ -149,39 +149,71 @@ function png_to_text(path) {
 	});
 }
 
-
-//лаба1
-const net = new NeuralNetwork();
-net.init(25,5,2,12);
-
-const png = {};
-png_to_text('./src/png/17.png')
-.then( res => {
-	png['17'] = res;
-	png_to_text('./src/png/20.png')
-	.then( res => {
-		png['20'] = res;
-		png_to_text('./src/png/27.png')
-		.then( res => {
-			png['27'] = res;	
-			png_to_text('./src/png/30.png')
-			.then( res => {
-				png['30'] = res;
-				
-				net.train([
-					{input: png['17'], output: [1,0,0,0,0]},
-					{input: png['20'], output: [0,1,0,0,0]},
-					{input: png['27'], output: [0,0,1,0,0]},
-					{input: png['30'], output: [0,0,0,1,0]},
-				], 1000);													
-
-				console.log(net.run(png['17']));
-				console.log(net.run(png['20']));
-				console.log(net.run(png['27']));
-				console.log(net.run(png['30']));
-
-				//net.save('db.json');
-			});
+function tests(net, dir) {
+	const png = fs.readdirSync(dir);
+	Promise.all(png.map( (path) => {
+		return png_to_text(dir + '/' + path);
+	}))
+	.then(values => {
+		const outp = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0};
+		values.forEach(val => {
+			let res = net.run(val);
+			//console.log(res);
+			if (res[0] > 0.8) outp[1]++;
+			else if (res[1] > 0.8) outp[2]++;
+			else if (res[2] > 0.8) outp[3]++;
+			else if (res[3] > 0.8) outp[4]++;
+			else if (res[4] > 0.8) outp[5]++;
 		});
+
+		console.log(outp);
 	});
-});
+
+}
+
+/*
+let png = fs.readdirSync('./src/png/1');
+let main_png;
+Promise.all(png.map( (path) => {
+	return png_to_text('./src/png/1/' + path);
+}))
+.then(values => {
+	main_png = values;
+
+	let db = main_png.map((val,index) => {
+		if (index === 0) return {input: val, output: [1,0,0,0,0]};
+		if (index === 1) return {input: val, output: [0,1,0,0,0]};
+		if (index === 2) return {input: val, output: [0,0,1,0,0]};
+		if (index === 3) return {input: val, output: [0,0,0,1,0]};
+		if (index >= 4) return {input: val, output: [0,0,0,0,1]};
+	});
+	
+	const net = new NeuralNetwork();
+	net.init({
+		input_cnt: 25,
+		output_cnt: 5,
+		layers_cnt: 4,
+		layers_neurons_cnt: 18
+	});
+	net.train({
+		data: db,
+		repeat_cnt: 500,
+		speed: 0.1
+	});
+
+	console.log(net.run(db[0].input));
+	console.log(net.run(db[1].input));
+	console.log(net.run(db[2].input));
+	console.log(net.run(db[3].input));
+
+	//net.save('net.json');
+
+
+});*/
+
+
+const net = new NeuralNetwork();
+net.load('net.json');
+
+const dir = './src/png/2'
+tests(net,dir);
