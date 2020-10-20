@@ -1,6 +1,9 @@
 const fs = require('file-system');
 const PNG = require('pngjs').PNG;
 const NeuralNetwork = require('./NeuralNetwork.js');
+const express = require('express');
+const bodyParser = require('body-parser');
+const cors = require('cors');
 
 function png_to_text(path) {
 	return new Promise(resolve => {
@@ -9,7 +12,7 @@ function png_to_text(path) {
 		.pipe(
 			new PNG({
 			  filterType: 4,
-			})
+			}) 
 		)
 		.on("parsed", function () {
 			for (var y = 0; y < this.height; y++) {
@@ -49,12 +52,32 @@ function tests(net, dir) {
 			else if (res[1] > 0.8) outp['2.png'] = true;
 			else if (res[2] > 0.8) outp['3.png'] = true;
 			else if (res[3] > 0.8) outp['4.png'] = true;
-			else if (res[4] > 0.8) outp['nothing.png'] = true;
+			else if (res[4] > 0.8) outp['nothing'] = true;
 			console.log(name, outp);
 		});
 	});
 
 }
+
+const net = new NeuralNetwork();
+net.load('net.json');
+
+const parser = bodyParser.urlencoded({extended: false});
+const app = express();
+
+app.use(cors());
+app.use(bodyParser.json());
+
+app.post('/', parser, (req, res) => {
+	const vector = req.body.vector;
+	let outp = net.run(vector);
+	outp = outp.map((val) => {
+		return (val > 0.8) ? 1 : 0;
+	});
+	console.log(outp);
+	res.send(outp);
+});
+app.listen('3000');
 
 /*
 let png = fs.readdirSync('./src/png/1');
@@ -96,14 +119,9 @@ Promise.all(png.map( (path) => {
 
 });*/
 
-
+/*
 const net = new NeuralNetwork();
 net.load('net.json');
 
 const dir = './src/png/2'
-tests(net,dir);
-
-png_to_text('./_.png')
-.then(val => {
-	console.log(net.run(val));
-});
+tests(net,dir);*/

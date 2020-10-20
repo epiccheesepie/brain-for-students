@@ -1,7 +1,6 @@
 {
   "name": "network",
   "version": "1.0.0",
-  "description": "",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -9,8 +8,19 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "cors": "^2.8.5",
     "file-system": "^2.2.2",
     "mathjs": "^7.5.0",
     "pngjs": "^5.0.0"
-  }
+  },
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/epiccheesepie/Brain.git"
+  },
+  "bugs": {
+    "url": "https://github.com/epiccheesepie/Brain/issues"
+  },
+  "homepage": "https://github.com/epiccheesepie/Brain#readme",
+  "description": ""
 }

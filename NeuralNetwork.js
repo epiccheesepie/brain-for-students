@@ -44,15 +44,6 @@ class NeuralNetwork {
 		return outputs;
 	}
 
-	save(path) { //сохранение слоев
-		fs.writeFileSync(path, JSON.stringify(this.layers));
-	}
-
-	load(path) { //загрузка слоев
-		let layers = JSON.parse(fs.readFileSync(path));
-		this.layers = layers;
-	}
-
 	train({ data, repeat_cnt, speed }) { //тренировка сети
 		for(let i=0;i<repeat_cnt;i++) {
 			data.forEach(val => {
@@ -100,6 +91,15 @@ class NeuralNetwork {
 			lay.weights = weights;
 			inputs = lay.activates;
 		});
+	}
+
+	save(path) { //сохранение слоев
+		fs.writeFileSync(path, JSON.stringify(this.layers));
+	}
+
+	load(path) { //загрузка слоев
+		let layers = JSON.parse(fs.readFileSync(path));
+		this.layers = layers;
 	}
 
 }

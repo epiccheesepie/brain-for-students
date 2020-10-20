@@ -7,7 +7,38 @@
 	</head>
 	<body>
 		<div id="root">
-			<canvas id="_canvas" width="250px" height="250px"></canvas>
+			<div class="left">
+				<div class="container">
+					<div class="left__pngs">
+						<div id="1png" class="screen screen--small"></div>
+						<div id="2png" class="screen screen--small"></div>
+						<div id="3png" class="screen screen--small"></div>
+						<div id="4png" class="screen screen--small"></div>
+						<div id="nothing" class="screen screen--small"></div>
+					</div>	
+					<div class="left__interface">
+						<div class="screen" id="_screen"></div>
+						<div class="menu">
+							<button id="subm" class="button">
+								<span>Отправить</span>
+							</button>
+							<button id="clear" class="button">
+								<span>Очистить</span>
+							</button>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="right">
+				<div class="column">
+					<div class="column_pngs">
+						<div class="item"></div>
+						<div class="item"></div>
+						<div class="item"></div>
+						<div class="item"></div>
+					</div>
+				</div>
+			</div>
 		</div>
 
 		<script src="./main.js"></script>
