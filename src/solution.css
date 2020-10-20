@@ -1,6 +1,8 @@
 body {
 	margin: 0;
 	padding: 0;
+	font-family: 'Montserrat', sans-serif;
+	font-size: 18px;
 }
 html, body, #root {
 	height: 100%;
@@ -11,10 +13,22 @@ html, body, #root {
 	display: flex;
 	background-color: #303846;
 }
+.left {
+	width: 45%;
+}
+.right {
+	width: 55%;
+}
+.title {
+	position: absolute;
+	top: 10%;
+	color: #fff;
+	font-size: 60px;
+	text-shadow: 2px 2px 4px rgba(0,0,0,.8);
+}
 .left, .right {
 	position: relative;
 	height: 100%;
-	width: 50%;
 	display: flex;
 	justify-content: center;
 	align-items: center;
@@ -48,20 +62,21 @@ html, body, #root {
 	justify-content: space-between;
 }
 .button {
+	font-family: 'Montserrat', sans-serif;
 	background: none;
 	border: 1px solid #fff;
 	border-radius: 4px;
 	color: #fff;
 	cursor: pointer;
 	padding: 8px 0;
-	font-size: 14px;
+	font-size: 18px;
 	width: 48%;
 	outline: none;
 	box-shadow: 0 0 6px 0 rgba(255,255,255,.5);	
 	transition: .1s;	
 }
 .button:hover {
-	background-color: rgba(255,255,255,.2);
+	background-color: rgba(255,255,255,.15);
 }
 .screen {
 	background-color: #fff;
@@ -100,4 +115,67 @@ html, body, #root {
 	width: 10px;
 	height: 10px;
 	border: none;
+}
+.right__menu {
+	display: flex;
+	flex-direction: column;
+}
+.menu__items {
+	display: flex;
+	flex-direction: column;
+}
+.item {
+	display: flex;
+	margin-bottom: 40px;
+}
+.item:last-child {
+	margin-bottom: 0;
+}
+.item__conf {
+	display: flex;
+	background-color: #fff;
+	margin-left: 20px;
+	border-radius: 4px;
+}
+.conf__inp {
+	font-size: 14px;
+	background-color: #303846;
+	outline: none;
+	border: none;
+	box-shadow: 2px 2px 3px #aaa;
+	color: #fff;
+	width: 40px;
+	text-align: center;
+}
+.conf__title {
+	padding-right: 8px;
+}
+.conf__q {
+	width: 100%;
+    display: flex;
+    padding: 0 20px;
+    align-items: center;
+}
+.button--right {
+	width: 120px;
+}
+.menu__title {
+	margin-bottom: 12px;
+	color: #fff;
+}
+.button--sam {
+	cursor: pointer;
+	color: #000;
+	background-color: #fff;
+}
+.button--sam:hover {
+	background-color: #fff;
+}
+.count {
+	background-color: #fff;
+    width: 150px;
+    display: flex;
+    justify-content: center;
+    padding: 10px 12px;
+    border-radius: 4px;
 }

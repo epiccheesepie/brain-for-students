@@ -77,7 +77,6 @@ document.querySelector('#subm').addEventListener('click', (e) => {
 		console.log(answer);
 
 		let index = answer.indexOf(1);
-		console.log(index);
 		if (index === -1) index = 4;
 		const pngs = document.querySelector('.left__pngs');
 		pngs.children[index].classList.add('screen--green');
@@ -89,4 +88,40 @@ document.querySelector('#subm').addEventListener('click', (e) => {
 
 document.querySelector('#clear').addEventListener('click', (e) => {
 	elem.clear();
+});
+
+document.querySelector('#train').addEventListener('click', (e) => {
+	const body = [];
+	document.querySelectorAll('#_form input').forEach( (inp) => {
+		body.push(+inp.value);
+	});
+
+	console.log(body);
+	(async () => {
+		const response = await fetch('http://localhost:3000/net', {
+			method: 'POST',
+			body: JSON.stringify({'hidden_cnt': body[0], 'hidden_neurons_cnt': body[1], 'speed': body[2], 'err': body[3]}),
+			headers: {
+				'Content-Type': 'application/json'
+			}
+		});
+		const answer = await response.json();
+		
+		document.querySelector('#count').value = answer[0];
+	})();
+});
+
+document.querySelector('#sam').addEventListener('click', (e) => {
+	(async () => {
+		const response = await fetch('http://localhost:3000/net', {
+			method: 'POST',
+			body: JSON.stringify({type: 'sam'}),
+			headers: {
+				'Content-Type': 'application/json'
+			}
+		});
+		const answer = await response.json();
+		
+		document.querySelector('#count').value = answer[0];
+	})();
 });

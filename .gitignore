@@ -1,3 +1,4 @@
 node_modules
 src/png
-_.png
+test.js
+db.json

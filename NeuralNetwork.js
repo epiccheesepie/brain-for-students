@@ -44,12 +44,22 @@ class NeuralNetwork {
 		return outputs;
 	}
 
-	train({ data, repeat_cnt, speed }) { //тренировка сети
-		for(let i=0;i<repeat_cnt;i++) {
+	train({ data, err=0.01, speed }) { //тренировка сети
+		let d_er;
+		let cnt = 0;
+		do {
+			const arr_er = [];
 			data.forEach(val => {
-				this._backProp(val.input,val.output,speed);
+				arr_er.push(this._backProp(val.input,val.output,speed));
 			});
+
+			d_er = arr_er.reduce((sum, a) => sum+a, 0) / arr_er.length;
+			cnt += 1;
+			if (cnt > 1500) break;
 		}
+		while (err < d_er);
+
+		return cnt;
 	}
 
 	_backProp(inputs, outputs, speed) { //back propagation
@@ -58,6 +68,9 @@ class NeuralNetwork {
 		const layers = this.layers; //слои сети
 		const errors = [];
 		errors.unshift(math.add(outputs,math.multiply(train_outputs,-1)));
+
+		const error = (math.square(errors[0])).reduce((sum, a) => sum+a, 0); //вычисление ошибки для формирования количества циклов
+
 		layers.reverse().every((lay,index,arr) => {
 			if (index === arr.length-1) return false;
 			let d = [];
@@ -91,6 +104,8 @@ class NeuralNetwork {
 			lay.weights = weights;
 			inputs = lay.activates;
 		});
+
+		return error;
 	}
 
 	save(path) { //сохранение слоев
@@ -100,6 +115,10 @@ class NeuralNetwork {
 	load(path) { //загрузка слоев
 		let layers = JSON.parse(fs.readFileSync(path));
 		this.layers = layers;
+	}
+
+	clear() {
+		this.layers = [];
 	}
 
 }

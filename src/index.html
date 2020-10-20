@@ -4,10 +4,12 @@
 		<meta charset="utf8">
 		<title>Lab 1</title>
 		<link href="./solution.css" type="text/css" rel="stylesheet" />
+		<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400&display=swap" rel="stylesheet">
 	</head>
 	<body>
 		<div id="root">
 			<div class="left">
+				<span class="title">Интерфейс</span>
 				<div class="container">
 					<div class="left__pngs">
 						<div id="1png" class="screen screen--small"></div>
@@ -20,7 +22,7 @@
 						<div class="screen" id="_screen"></div>
 						<div class="menu">
 							<button id="subm" class="button">
-								<span>Отправить</span>
+								<span>Вектор</span>
 							</button>
 							<button id="clear" class="button">
 								<span>Очистить</span>
@@ -30,12 +32,65 @@
 				</div>
 			</div>
 			<div class="right">
-				<div class="column">
-					<div class="column_pngs">
-						<div class="item"></div>
-						<div class="item"></div>
-						<div class="item"></div>
-						<div class="item"></div>
+				<span class="title">Обучение</span>
+				<div class="right__menu">
+					<div class="menu__title">
+						<span>Пуск</span>
+						<span style="margin-left: 90px;">Настройки</span>
+					</div>
+					<div class="menu__items">
+						<div class="item">
+							<button id="sam" class="button button--right button--sam">
+								<span>Sam -></span>
+							</button>
+							<div class="item__conf">
+								<div class="conf__q">
+									<span class="conf__title">Cлоев: </span>
+									<input class="conf__inp" type="text" value="4" disabled />
+								</div>
+								<div class="conf__q">
+									<span class="conf__title">Нейроны: </span>
+									<input class="conf__inp" type="text" value="18" disabled />
+								</div>
+								<div class="conf__q">
+									<span class="conf__title">Сходимость: </span>
+									<input class="conf__inp" type="text" value="0.1" disabled />
+								</div>
+								<div class="conf__q">
+									<span class="conf__title">Ошибка: </span>
+									<input class="conf__inp" type="text" value="0.04" disabled />
+								</div>
+							</div>
+						</div>
+						<div class="item">
+							<button id="train" class="button button--right">
+								<span>Обучить</span>
+							</button>
+							<div id="_form" class="item__conf">
+								<div class="conf__q">
+									<span class="conf__title">Cлоев: </span>
+									<input class="conf__inp" type="text" value="2" />
+								</div>
+								<div class="conf__q">
+									<span class="conf__title">Нейроны: </span>
+									<input class="conf__inp" type="text" value="12" />
+								</div>
+								<div class="conf__q">
+									<span class="conf__title">Сходимость: </span>
+									<input class="conf__inp" type="text" value="0.1" />
+								</div>
+								<div class="conf__q">
+									<span class="conf__title">Ошибка: </span>
+									<input class="conf__inp" type="text" value="0.5" />
+								</div>
+							</div>
+						</div>
+						<div class="item" style="justify-content: flex-end;">
+							<div class="conf__q count">
+								<span class="conf__title">Счетчик: </span>
+								<input id="count" class="conf__inp" type="text" value="500" />
+							</div>
+						</div>
 					</div>
 				</div>
 			</div>
