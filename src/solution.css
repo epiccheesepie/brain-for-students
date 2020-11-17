@@ -126,6 +126,7 @@ html, body, #root {
 }
 .item {
 	display: flex;
+	flex-direction: column;
 	margin-bottom: 40px;
 }
 .item:last-child {
@@ -134,11 +135,17 @@ html, body, #root {
 .item__conf {
 	display: flex;
 	background-color: #fff;
-	margin-left: 20px;
+	padding: 10px;;
+	margin-top: 10px;
 	border-radius: 4px;
 }
+.item__title {
+	color: #fff;
+    font-size: 22px;
+    margin-left: 18px;
+}
 .conf__inp {
-	font-size: 14px;
+	font-size: 16px;
 	background-color: #303846;
 	outline: none;
 	border: none;
@@ -154,7 +161,11 @@ html, body, #root {
 	width: 100%;
     display: flex;
     padding: 0 20px;
-    align-items: center;
+	align-items: center;
+	border-right: 1px solid rgba(0,0,0,.2);
+}
+.conf__q:last-child {
+	border-right: none;
 }
 .button--right {
 	width: 120px;
@@ -163,12 +174,13 @@ html, body, #root {
 	margin-bottom: 12px;
 	color: #fff;
 }
-.button--sam {
+.button--name {
 	cursor: pointer;
 	color: #000;
 	background-color: #fff;
 }
-.button--sam:hover {
+.button--name:hover {
+	box-shadow: 0 0 6px 0 rgba(200,200,200,.5);	
 	background-color: #fff;
 }
 .count {

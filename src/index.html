@@ -34,61 +34,95 @@
 			<div class="right">
 				<span class="title">Обучение</span>
 				<div class="right__menu">
-					<div class="menu__title">
-						<span>Пуск</span>
-						<span style="margin-left: 90px;">Настройки</span>
-					</div>
 					<div class="menu__items">
 						<div class="item">
-							<button id="sam" class="button button--right button--sam">
-								<span>Sam -></span>
-							</button>
+							<div class="item__text">
+								<button id="sam" class="button button--right button--name">
+									<span>Sam -></span>
+								</button>
+								<span class="item__title">Обратное распространение</span>
+							</div>
 							<div class="item__conf">
 								<div class="conf__q">
 									<span class="conf__title">Cлоев: </span>
-									<input class="conf__inp" type="text" value="4" disabled />
+									<input class="conf__inp" type="text" value="2" disabled />
 								</div>
 								<div class="conf__q">
 									<span class="conf__title">Нейроны: </span>
-									<input class="conf__inp" type="text" value="18" disabled />
+									<input class="conf__inp" type="text" value="8" disabled />
 								</div>
 								<div class="conf__q">
-									<span class="conf__title">Сходимость: </span>
-									<input class="conf__inp" type="text" value="0.1" disabled />
+									<span class="conf__title">Скорость: </span>
+									<input class="conf__inp" type="text" value="0.14" disabled />
 								</div>
 								<div class="conf__q">
 									<span class="conf__title">Ошибка: </span>
-									<input class="conf__inp" type="text" value="0.04" disabled />
+									<input class="conf__inp" type="text" value="0.01" disabled />
+								</div>
+								<div class="conf__q">
+									<span class="conf__title">Счетчик: </span>
+									<input class="conf__inp" type="text" value="2886" disabled />
 								</div>
 							</div>
 						</div>
-						<div class="item">
-							<button id="train" class="button button--right">
-								<span>Обучить</span>
-							</button>
-							<div id="_form" class="item__conf">
+						<!-- <div id="_form" class="item">
+							<div class="item__text">
+								<button id="train" class="button button--right">
+									<span>Обучить</span>
+								</button>
+								<span class="item__title">Обучение методом обратного распространения</span>
+							</div>
+							<div class="item__conf">
 								<div class="conf__q">
 									<span class="conf__title">Cлоев: </span>
 									<input class="conf__inp" type="text" value="2" />
 								</div>
 								<div class="conf__q">
 									<span class="conf__title">Нейроны: </span>
-									<input class="conf__inp" type="text" value="12" />
+									<input class="conf__inp" type="text" value="8" />
 								</div>
 								<div class="conf__q">
-									<span class="conf__title">Сходимость: </span>
-									<input class="conf__inp" type="text" value="0.1" />
+									<span class="conf__title">Скорость: </span>
+									<input class="conf__inp" type="text" value="0.14" />
 								</div>
 								<div class="conf__q">
 									<span class="conf__title">Ошибка: </span>
-									<input class="conf__inp" type="text" value="0.5" />
+									<input class="conf__inp" type="text" value="0.05" />
+								</div>
+								<div class="conf__q">
+									<span class="conf__title">Счетчик: </span>
+									<input id="count" class="conf__inp" type="text" value="500" />
 								</div>
 							</div>
-						</div>
-						<div class="item" style="justify-content: flex-end;">
-							<div class="conf__q count">
-								<span class="conf__title">Счетчик: </span>
-								<input id="count" class="conf__inp" type="text" value="500" />
+						</div> -->
+						<div class="item">
+							<div class="item__text">
+								<button id="bill" class="button button--right button--name">
+									<span>Bill -></span>
+								</button>
+								<span class="item__title">Встречное распространение</span>
+							</div>
+							<div class="item__conf">
+								<div class="conf__q">
+									<span class="conf__title">Cлоев: </span>
+									<input class="conf__inp" type="text" value="1" disabled />
+								</div>
+								<div class="conf__q">
+									<span class="conf__title">Нейроны: </span>
+									<input class="conf__inp" type="text" value="6" disabled />
+								</div>
+								<div class="conf__q">
+									<span class="conf__title">Скорость: </span>
+									<input class="conf__inp" type="text" value="0.14" disabled />
+								</div>
+								<div class="conf__q">
+									<span class="conf__title">Ошибка: </span>
+									<input class="conf__inp" type="text" value="0.678" disabled />
+								</div>
+								<div class="conf__q">
+									<span class="conf__title">Счетчик: </span>
+									<input class="conf__inp" type="text" value="100" disabled />
+								</div>
 							</div>
 						</div>
 					</div>
