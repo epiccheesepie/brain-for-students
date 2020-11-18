@@ -9,13 +9,13 @@ class NeuralNetwork {
 	init({ input_cnt, output_cnt, hidden_cnt, hidden_neurons_cnt }) { //начальная инициализация
 		const layers = this.layers;
 		for (let i=0;i<hidden_cnt;i++) {
-			let lay = new Layer(hidden_neurons_cnt);
+			const lay = new Layer(hidden_neurons_cnt);
 			lay.init(input_cnt);
 			layers.push(lay);
 			input_cnt = lay.cnt;
 		}
 
-		let lay = new OutputLayer(output_cnt);
+		const lay = new OutputLayer(output_cnt);
 		lay.init(layers[layers.length - 1].cnt);
 		layers.push(lay);
 	}
@@ -25,7 +25,7 @@ class NeuralNetwork {
 	}
 
 	load(path) { //загрузка слоев
-		let layers = JSON.parse(fs.readFileSync(path));
+		const layers = JSON.parse(fs.readFileSync(path));
 		this.layers = layers;
 	}
 
@@ -47,7 +47,7 @@ class Layer {
 		for (let i=0;i<this.cnt;i++) {
 			const w = this.weights[i] = [];
 			for (let j=0;j<length;j++) {
-				w.push(Math.random()); //для backProp -0.5
+				w.push(Math.random() - 0.5); //для backProp -0.5
 			}
 		}
 	}
@@ -62,21 +62,24 @@ class OutputLayer extends Layer {
 class NeuralNetwork_BackProp extends NeuralNetwork {
 
 	run(inputs) { //определение результата
-		function calcActivate(inputs,lay) { //рассчет активации нейронов в слое
-			let arr = [];
-			let { cnt, weights, bias } = lay; //количество нейронов в слое; веса; биас
 
-			for (let i=0;i<cnt;i++) {
-				let mult = math.multiply(inputs,weights[i]) + bias; //умножение инпутов и весов + биас
-				let x = 1/(1+math.exp(-mult)); //функция активации (сигмоида)
-				arr.push(x); //запись в нейроны
+		const layers = this.layers;
+
+		const calcActivate = (inputs,lay) => { //рассчет активации нейронов в слое
+			const activates = [];
+			const { cnt, weights, bias } = lay; //количество нейронов в слое; веса; биас
+
+			for (let i=0; i<cnt; i++) {
+				const net = math.multiply(inputs,weights[i]) + bias; //умножение инпутов и весов + биас
+				const x = 1/(1+math.exp(-net)); //функция активации (сигмоида)
+				activates.push(x);
 			}
 
-			return arr;
-		}
+			return activates;
+		};
 
 		let outputs = [];
-		this.layers.forEach( (lay) => {
+		layers.forEach( (lay) => {
 			inputs = calcActivate(inputs,lay);
 			lay.activates = inputs;
 		});
@@ -86,34 +89,44 @@ class NeuralNetwork_BackProp extends NeuralNetwork {
 	}
 
 	train({ data, err=0.01, speed }) { //тренировка сети
-		let d_er;
+		const chart = [ //график зависимости итераций от ошибки для google charts
+			['Итерация', 'Ошибка']
+		];
+
+		let error;
 		let cnt = 0;
 		do {
-			const arr_er = [];
+			const errors = [];
 			data.forEach(val => {
-				arr_er.push(this._backProp(val.input,val.output,speed));
+				const errorInSet = this._backProp(val.inputs,val.outputs,speed);
+				errors.push(errorInSet);
 			});
 
-			d_er = arr_er.reduce((sum, a) => sum+a, 0) / arr_er.length;
+			error = errors.reduce((sum, a) => sum+a, 0) / errors.length;
 			cnt += 1;
-			if (cnt > 3000) break;
-		}
-		while (err < d_er);
 
-		return cnt;
+			chart.push([
+				cnt,
+				error
+			])
+
+			if (cnt > 5000) break;
+		}
+		while (err < error);
+
+		return [cnt, chart];
 	}
 
 	_backProp(inputs, outputs, speed) { //back propagation
 		const train_outputs = this.run(inputs);	
-
-		const layers = this.layers; //слои сети
 		const errors = [];
-		errors.unshift(math.add(outputs,math.multiply(train_outputs,-1)));
-
+		errors.push(math.add(outputs,math.multiply(train_outputs,-1))); //ошибка в последнем слое
 		const error = (math.square(errors[0])).reduce((sum, a) => sum+a, 0); //вычисление ошибки для формирования количества циклов
 
-		layers.reverse().every((lay,index,arr) => {
-			if (index === arr.length-1) return false;
+		const layers = this.layers; //слои сети
+
+		layers.reverse().forEach((lay,index,arr) => {
+			if (index === arr.length-1) return;
 			let d = [];
 			let weights_to_d = [];
 			let cnt = lay.weights[0].length;
@@ -128,7 +141,6 @@ class NeuralNetwork_BackProp extends NeuralNetwork {
 				weights_to_d = [];
 			}
 			errors.unshift(d);
-			return true;
 		});
 
 		layers.reverse().forEach((lay,index) => {
