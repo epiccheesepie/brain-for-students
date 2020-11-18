@@ -7,10 +7,10 @@ const fs = require('file-system');
 const db = JSON.parse(fs.readFileSync('db.json'));
 
 // let net = new NeuralNetwork_BackProp();
-// net.load('Sam.json');
+// net.load('./BackProp/Sam.json');
 
 const net = new NeuralNetwork_CounterProp();
-net.load('Bill.json');
+net.load('./CounterProp/Bill.json');
 
 const parser = bodyParser.urlencoded({extended: false});
 const app = express();

@@ -166,7 +166,7 @@ class NeuralNetwork_CounterProp extends NeuralNetwork {
 		const { cnt, weights, bias } = lay;
 
 		for (let i=0;i<cnt;i++) {
-			let net = math.multiply(inputs,weights[i]) + bias; //умножение инпутов и весов + биас
+			const net = math.multiply(inputs,weights[i]) + bias; //умножение инпутов и весов + биас
 			activates.push(net); //запись в нейроны
 		}
 
@@ -180,6 +180,10 @@ class NeuralNetwork_CounterProp extends NeuralNetwork {
 		});
 	}
 
+	#normalize(inputs) {
+		return inputs.map( (x) => x/inputs.length);
+	}
+
 	run(inputs) { //определение результата
 		let outputs = [];
 		this.layers.forEach( (lay) => {
@@ -191,14 +195,14 @@ class NeuralNetwork_CounterProp extends NeuralNetwork {
 		return outputs;
 	}
 
-	_counterProp(inputs, outputs, speed=0.25, layers=this.layers) {
-		const train_outputs = this.run(inputs);
-		const errors = [];
-		errors.unshift(math.add(outputs,math.multiply(train_outputs,-1)));
-		const error = (math.square(errors[0])).reduce((sum, a) => sum+a, 0);
+	_counterProp(inputs, outputs, speedA=0.14, speedB=0.01, layers=this.layers) {
 
-		inputs = inputs.map( (x) => x/inputs.length); //нормализованный вектор
+		const grossbergWeights = []; //для составления графиков
+		const weightBack = {
+			grossberg: null, cohonen: null
+		};
 
+		inputs = this.#normalize(inputs); //нормализованный вектор
 		layers.forEach( (lay) => {
 			if (lay.constructor.name === 'OutputLayer') { //cлой Гроссберга
 				
@@ -207,10 +211,13 @@ class NeuralNetwork_CounterProp extends NeuralNetwork {
 
 				for (let i=0; i<lay.cnt; i++) {
 					const weight = weights[i][index]; //значение старого веса соединенного с выигравшем нейроном слоя Кохонена
-					const newWeight = weight+0.01*(outputs[i]-weight); //новый вес
-
+					const newWeight = weight+speedB*(outputs[i]-weight); //новый вес
 					weights[i][index] = newWeight;
+
+					grossbergWeights.push(weight);
 				}
+
+				weightBack.grossberg = grossbergWeights.reduce((sum,a) => sum+a, 0) / grossbergWeights.length;
 
 				return;
 			}
@@ -218,34 +225,65 @@ class NeuralNetwork_CounterProp extends NeuralNetwork {
 			const activates = this.#calcActivates(inputs,lay); //рассчет активаций
 			const index = activates.indexOf(Math.max(...activates)); //индекс выигравшего нейрона слоя Кохонена
 			const weights = lay.weights[index]; //веса соединенные с выигравшим нейроном слоя Кохонена
+			
+			const weightsCohonen = lay.weights; //все веса слоя Кохонена (для графика)
 
+			//weights = weights.map((weight,i) => weight+speedA*(inputs[i]-weight) ); [ПОЧ НЕ РАБОТАЕТ]
 			for (let i=0; i<weights.length; i++) {
 				const weight = weights[i]; //текущее значение веса
-				const newWeight = weight+speed*(inputs[i]-weight); //новое значение веса
-
+				const newWeight = weight+speedA*(inputs[i]-weight); //новое значение веса
 				weights[i] = newWeight;
 			}
 			
 			inputs = activates;
+
+			weightBack.cohonen = weightsCohonen.reduce((reducer, a) => {
+				return reducer + a.reduce( (sum,b) => sum+b) / a.length;
+			}, 0) / weightsCohonen.length;
 		});
 
-		return error;
+		return [weightBack.grossberg, weightBack.cohonen];
 	}
 
-	train({ data, speed}) {
-		const chart = [
-			['Итерация', 'Ошибка']
+	train({ data, speedA, speedB}) {
+		const chartItems = {
+			grossbergWeights: [],
+			cohonenWeights: [],
+			inputs: [],
+			outputs: []
+		};
+
+		const chart = [ //график для использования в google charts
+			{name: 'Выходы и веса Гроссберга', data: [
+				["Итерация","Средний вес Гроссберга","Средний выход"]
+			]},
+			{name: 'Входы и веса Кохонена', data: [
+				["Итерация","Средний вес Кохонена","Средний вход"]
+			]},
 		];
 
-		const errors = [];
-
 		for(let i=0; i<100; i++) {
-			data.forEach( (val) => {
-				errors.push(this._counterProp(val.input,val.output,speed));
-			});
-			const error = errors.reduce((sum, a) => sum+a, 0) / errors.length;
+			data.forEach( (item) => {
+				const {inputs, outputs} = item;
 
-			chart.push([i,error]);
+				const [grossbergWeight, cohonenWeight] = this._counterProp(inputs,outputs,speedA,speedB);
+
+				chartItems.grossbergWeights.push(grossbergWeight);
+				chartItems.cohonenWeights.push(cohonenWeight);
+				chartItems.outputs.push(outputs.reduce((sum,a) => sum+a, 0) / outputs.length);
+				chartItems.inputs.push(this.#normalize(inputs).reduce((sum,a) => sum+a, 0) / inputs.length);
+			});
+
+			chart[0].data.push([
+				i,
+				chartItems.grossbergWeights.reduce((sum, a) => sum+a, 0) / chartItems.grossbergWeights.length, //средний вес Гроссберга
+				chartItems.outputs.reduce((sum,a) => sum+a, 0) / chartItems.outputs.length //средний выход
+			]);
+			chart[1].data.push([
+				i,
+				chartItems.cohonenWeights.reduce((sum, a) => sum+a, 0) / chartItems.cohonenWeights.length, //средний вес Кохонена
+				chartItems.inputs.reduce((sum,a) => sum+a,0) / chartItems.inputs.length //средний вход (нормализованный)
+			]);
 		}
 
 		return chart;
