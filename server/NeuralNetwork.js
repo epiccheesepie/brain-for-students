@@ -46,8 +46,10 @@ class Layer {
 	init(length) {
 		for (let i=0;i<this.cnt;i++) {
 			const w = this.weights[i] = [];
+			//const b = this.bias = [];
 			for (let j=0;j<length;j++) {
 				w.push(Math.random() - 0.5); //для backProp -0.5
+				//b.push(Math.random() - 0.5); //bias
 			}
 		}
 	}
@@ -55,7 +57,6 @@ class Layer {
 class OutputLayer extends Layer {
 	constructor(cnt, weights, activates, bias) {
 		super(cnt,weights,activates,bias);
-		this.bias = 0;
 	}
 }
 
@@ -70,6 +71,7 @@ class NeuralNetwork_BackProp extends NeuralNetwork {
 			const { cnt, weights, bias } = lay; //количество нейронов в слое; веса; биас
 
 			for (let i=0; i<cnt; i++) {
+				//const net = math.multiply(inputs,weights[i]) + bias[i];
 				const net = math.multiply(inputs,weights[i]) + bias; //умножение инпутов и весов + биас
 				const x = 1/(1+math.exp(-net)); //функция активации (сигмоида)
 				activates.push(x);
@@ -129,16 +131,20 @@ class NeuralNetwork_BackProp extends NeuralNetwork {
 			if (index === arr.length-1) return;
 			let d = [];
 			let weights_to_d = [];
+			//let bias_to_d = [];
 			let cnt = lay.weights[0].length;
 			let ix = 0;
 			for(let i=0;i<cnt;i++) {
 				for(let j=0;j<lay.cnt;j++) {
 					weights_to_d.push(lay.weights[j][ix]);
+					//bias_to_d.push(lay.bias[j]);
 				}
 				ix++;
+				//let dx = math.multiply(errors[0],math.add(weights_to_d,bias_to_d));
 				let dx = math.multiply(errors[0],weights_to_d);
 				d.push(dx);
 				weights_to_d = [];
+				//bias_to_d = [];
 			}
 			errors.unshift(d);
 		});
@@ -147,12 +153,16 @@ class NeuralNetwork_BackProp extends NeuralNetwork {
 			let weights = [];
 			for(let i=0;i<lay.cnt;i++) {
 				let weights_x = [];
+				//let bias_x = [];
 				for(let j=0;j<lay.weights[i].length;j++) {
 					let w = lay.weights[i][j];
+					//let b = lay.bias[j];
 					let f = lay.activates[i]*(1-lay.activates[i]);
 					weights_x.push(w+errors[index][i]*f*inputs[j]*speed);
+					//bias_x.push(b+errors[index][i]*f*inputs[j]*speed);
 				}
 				weights.push(weights_x);
+				//lay.bias = bias_x;
 			}
 			lay.weights = weights;
 			inputs = lay.activates;
@@ -164,12 +174,12 @@ class NeuralNetwork_BackProp extends NeuralNetwork {
 
 class NeuralNetwork_CounterProp extends NeuralNetwork {
 
-	init() {
+	init({hidden_neurons_cnt}) {
 		super.init({
 			input_cnt: 25,
 			output_cnt: 5,
 			hidden_cnt: 1,
-			hidden_neurons_cnt: 6
+			hidden_neurons_cnt: hidden_neurons_cnt
 		});
 	}
 
@@ -257,7 +267,7 @@ class NeuralNetwork_CounterProp extends NeuralNetwork {
 		return [weightBack.grossberg, weightBack.cohonen];
 	}
 
-	train({ data, speedA, speedB}) {
+	train({ data, iteration, speedA, speedB}) {
 		const chartItems = {
 			grossbergWeights: [],
 			cohonenWeights: [],
@@ -274,7 +284,7 @@ class NeuralNetwork_CounterProp extends NeuralNetwork {
 			]},
 		];
 
-		for(let i=0; i<100; i++) {
+		for(let i=0; i<iteration; i++) {
 			data.forEach( (item) => {
 				const {inputs, outputs} = item;
 
