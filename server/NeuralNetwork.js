@@ -1,5 +1,6 @@
 const math = require('mathjs');
 const fs = require('file-system');
+const { index } = require('mathjs');
 
 class NeuralNetwork {
 	constructor(layers=[]) {
@@ -46,10 +47,8 @@ class Layer {
 	init(length) {
 		for (let i=0;i<this.cnt;i++) {
 			const w = this.weights[i] = [];
-			//const b = this.bias = [];
 			for (let j=0;j<length;j++) {
 				w.push(Math.random() - 0.5); //для backProp -0.5
-				//b.push(Math.random() - 0.5); //bias
 			}
 		}
 	}
@@ -312,5 +311,123 @@ class NeuralNetwork_CounterProp extends NeuralNetwork {
 	}
 }
 
+class HammingLayer extends Layer {
+	constructor(cnt,weights,activates) {
+		super(cnt,weights,activates);
+	}
+
+	init(length) {
+		for (let i=0;i<this.cnt;i++) {
+			const w = this.weights[i] = [];
+			for (let j=0;j<length;j++) {
+				w.push(null);
+			}
+		}
+	}
+}
+class HammingOutputLayer extends Layer {
+	constructor(cnt,weights,activates) {
+		super(cnt,weights,activates);
+	}
+}
+class NeuralNetwork_Hamming extends NeuralNetwork {
+
+	init({ input_cnt, output_cnt }) { //начальная инициализация
+		const layers = this.layers;
+		const hiddenLayer = new HammingLayer(output_cnt);
+		hiddenLayer.init(input_cnt);
+		layers.push(hiddenLayer);
+
+		const outputLayer = new HammingOutputLayer(output_cnt);
+		outputLayer.init(layers[layers.length - 1].cnt);
+		layers.push(outputLayer);
+	}
+
+	train(data) {
+		const input_cnt = data[0].inputs.length;
+		const output_cnt = data[0].outputs.length;
+
+		this.init({input_cnt, output_cnt});
+		
+		data.forEach( ({inputs, outputs}) => {
+			const indexAnswer = outputs.indexOf(1); //индекс ответа
+			this._hamming(inputs, indexAnswer, outputs.length);
+		});
+	}
+
+	run(inputs) {
+		const T = inputs.length / 2;
+		const layers = this.layers;
+
+		const thresholdFunc = (activates) => { //пороговая функция
+			return activates.map( x => {
+				if (x <= 0) {
+					return 0;
+				} else if (x >= T) {
+					return T;
+				} else {
+					return x;
+				}
+			});
+		};
+
+		const calcActivate = (inputs,lay) => { //рассчет активации нейронов в слое
+			const activates = [];
+			const { cnt, weights} = lay; //количество нейронов в слое; веса
+
+			for (let i=0; i<cnt; i++) {
+				const net = math.multiply(inputs,weights[i]); //умножение инпутов и весов
+				activates.push(net);
+			}
+
+			return thresholdFunc(activates);
+		};
+
+		let activates = calcActivate(inputs, layers[0]); //активации первого слоя
+		let lengthVector;
+		let cnt = 0; //количество итераций
+
+		const chartLength = [
+			['Количество итерация','Разность векторов']
+		];
+
+		do {
+			const newActivates = calcActivate(activates, layers[1]); //активации после категорий
+
+			const diffVector = //разность векторов
+				math.add(newActivates,math.multiply(activates,-1))
+					.map( val => val*val);
+			lengthVector = diffVector.reduce((sum,a) => sum+a, 0) ** 0.5; //норма вектора
+
+			activates = newActivates;
+			cnt += 1;
+
+			chartLength.push([cnt,lengthVector]);
+
+		} while (lengthVector > 0.1);
+
+		console.log(cnt);
+		console.log(activates);
+
+		const indexAnswer = activates.indexOf(Math.max(...activates));
+		const chart = [indexAnswer,cnt];
+
+		return [chart,chartLength];
+	}
+
+	_hamming(inputs,j,outputs_cnt) {
+		const layers = this.layers;
+		const epsilon = -(1/outputs_cnt)+0.001;
+
+		layers[0].weights[j] = layers[0].weights[j].map( (weight,i) => { //рассчет весов первого слоя
+			return inputs[i]/2;
+		});
+		layers[1].weights[j] = layers[1].weights[j].map( (weight,i) => { //рассчет весов слоя категорий
+			return (i === j) ? 1 : epsilon;
+		});
+	}
+}
+
 module.exports.NeuralNetwork_BackProp = NeuralNetwork_BackProp;
 module.exports.NeuralNetwork_CounterProp = NeuralNetwork_CounterProp;
+module.exports.NeuralNetwork_Hamming = NeuralNetwork_Hamming;

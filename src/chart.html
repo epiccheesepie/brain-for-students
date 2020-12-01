@@ -6,12 +6,10 @@
         google.charts.setOnLoadCallback(drawChart);
   
         function drawChart() {
-          var data = google.visualization.arrayToDataTable([
-            []
-          ]);
+          var data = google.visualization.arrayToDataTable([["Символ","Количество итераций"],[0,8],[1,9],[2,15],[3,9],[4,13],[5,13],[6,16],[7,8],[8,7],[9,11],[10,15],[11,14],[12,6],[13,10]]);
   
           var options = {
-            title: 'NAME',
+            title: 'Количество итераций от символа',
             curveType: 'function',
             legend: { position: 'bottom' }
           };
