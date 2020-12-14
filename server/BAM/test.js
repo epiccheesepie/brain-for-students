@@ -1,6 +1,8 @@
-const { NeuralNetwork_Hamming: NeuralNetwork } = require('../NeuralNetwork.js');
+const { BAM } = require('../NeuralNetwork.js');
 const fs = require('file-system');
 const PNG = require('pngjs').PNG;
+
+const math = require('mathjs');
 
 function png_to_text(path) {
 	return new Promise(resolve => {
@@ -70,16 +72,21 @@ function tests(net, dir) {
 
 }
 
- const db = JSON.parse(fs.readFileSync('./db.json'));
- const db_noise_1 = JSON.parse(fs.readFileSync('./db_noise_1.json'));
- const db_noise_4 = JSON.parse(fs.readFileSync('./db_noise_4.json'));
- const db_noise_8 = JSON.parse(fs.readFileSync('./db_noise_8.json'));
+const db = JSON.parse(fs.readFileSync('./db.json'));
+const A = [[1,1,1,1,1,-1,-1,1,-1,-1,-1,-1,1,-1,-1,-1,-1,1,-1,-1,-1,-1,1,-1,-1]];
+const A_d = [[1,-1,-1,-1,1,1,1,-1,-1,1,1,-1,1,-1,1,1,-1,-1,1,1,1,-1,-1,-1,1]];
 
- const net = new NeuralNetwork();
- net.train(db);
- db.forEach( val => {
-	net.run(val.inputs);
- });
+const net = new BAM();
+net.init({
+	input_cnt: 25,
+	output_cnt: 20
+});
+
+net.train(db);
+net.run(A);
+net.run(A_d);
+
+
  
 // fs.writeFileSync('./chart.json', JSON.stringify(chart));
 // fs.writeFileSync('./chartLength.json', JSON.stringify(chartLength));

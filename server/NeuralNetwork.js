@@ -1,24 +1,9 @@
 const math = require('mathjs');
 const fs = require('file-system');
-const { index } = require('mathjs');
 
 class NeuralNetwork {
 	constructor(layers=[]) {
 		this.layers = layers;
-	}
-
-	init({ input_cnt, output_cnt, hidden_cnt, hidden_neurons_cnt }) { //начальная инициализация
-		const layers = this.layers;
-		for (let i=0;i<hidden_cnt;i++) {
-			const lay = new Layer(hidden_neurons_cnt);
-			lay.init(input_cnt);
-			layers.push(lay);
-			input_cnt = lay.cnt;
-		}
-
-		const lay = new OutputLayer(output_cnt);
-		lay.init(layers[layers.length - 1].cnt);
-		layers.push(lay);
 	}
 
 	save(path) { //сохранение слоев
@@ -44,11 +29,11 @@ class Layer {
 		this.bias = bias;
 	}
 
-	init(length) {
+	init(length, func) {
 		for (let i=0;i<this.cnt;i++) {
 			const w = this.weights[i] = [];
 			for (let j=0;j<length;j++) {
-				w.push(Math.random() - 0.5); //для backProp -0.5
+				w.push(func());
 			}
 		}
 	}
@@ -60,6 +45,23 @@ class OutputLayer extends Layer {
 }
 
 class NeuralNetwork_BackProp extends NeuralNetwork {
+
+	init({ input_cnt, output_cnt, hidden_cnt, hidden_neurons_cnt }) { //начальная инициализация
+		const layers = this.layers;
+		const defineWeight = _ => {
+			return Math.random() - 0.5;
+		};
+		for (let i=0;i<hidden_cnt;i++) {
+			const lay = new Layer(hidden_neurons_cnt, defineWeight);
+			lay.init(input_cnt);
+			layers.push(lay);
+			input_cnt = lay.cnt;
+		}
+
+		const lay = new OutputLayer(output_cnt);
+		lay.init(layers[layers.length - 1].cnt, defineWeight);
+		layers.push(lay);
+	}
 
 	run(inputs) { //определение результата
 
@@ -173,13 +175,19 @@ class NeuralNetwork_BackProp extends NeuralNetwork {
 
 class NeuralNetwork_CounterProp extends NeuralNetwork {
 
-	init({hidden_neurons_cnt}) {
-		super.init({
-			input_cnt: 25,
-			output_cnt: 5,
-			hidden_cnt: 1,
-			hidden_neurons_cnt: hidden_neurons_cnt
-		});
+	init({ input_cnt=25, output_cnt=5, hidden_neurons_cnt }) { //начальная инициализация
+		const layers = this.layers;
+		const defineWeight = _ => {
+			return Math.random();
+		};
+
+		const cohonen = new Layer(hidden_neurons_cnt, defineWeight);
+		cohonen.init(input_cnt);
+		layers.push(cohonen);
+
+		const grossberg = new OutputLayer(output_cnt);
+		grossberg.init(layers[layers.length - 1].cnt, defineWeight);
+		layers.push(grossberg);
 	}
 
 	#calcActivates(inputs, lay) {
@@ -311,20 +319,6 @@ class NeuralNetwork_CounterProp extends NeuralNetwork {
 	}
 }
 
-class HammingLayer extends Layer {
-	constructor(cnt,weights,activates) {
-		super(cnt,weights,activates);
-	}
-
-	init(length) {
-		for (let i=0;i<this.cnt;i++) {
-			const w = this.weights[i] = [];
-			for (let j=0;j<length;j++) {
-				w.push(null);
-			}
-		}
-	}
-}
 class HammingOutputLayer extends Layer {
 	constructor(cnt,weights,activates) {
 		super(cnt,weights,activates);
@@ -333,12 +327,16 @@ class HammingOutputLayer extends Layer {
 class NeuralNetwork_Hamming extends NeuralNetwork {
 
 	init({ input_cnt, output_cnt }) { //начальная инициализация
+		const defineWeight = _ => {
+			return null;
+		};
+
 		const layers = this.layers;
-		const hiddenLayer = new HammingLayer(output_cnt);
+		const hiddenLayer = new Layer(output_cnt, defineWeight);
 		hiddenLayer.init(input_cnt);
 		layers.push(hiddenLayer);
 
-		const outputLayer = new HammingOutputLayer(output_cnt);
+		const outputLayer = new HammingOutputLayer(output_cnt, defineWeight);
 		outputLayer.init(layers[layers.length - 1].cnt);
 		layers.push(outputLayer);
 	}
@@ -352,6 +350,18 @@ class NeuralNetwork_Hamming extends NeuralNetwork {
 		data.forEach( ({inputs, outputs}) => {
 			const indexAnswer = outputs.indexOf(1); //индекс ответа
 			this._hamming(inputs, indexAnswer, outputs.length);
+		});
+	}
+
+	_hamming(inputs,j,outputs_cnt) {
+		const layers = this.layers;
+		const epsilon = -(1/outputs_cnt)+0.001;
+
+		layers[0].weights[j] = layers[0].weights[j].map( (weight,i) => { //рассчет весов первого слоя
+			return inputs[i]/2;
+		});
+		layers[1].weights[j] = layers[1].weights[j].map( (weight,i) => { //рассчет весов слоя категорий
+			return (i === j) ? 1 : epsilon;
 		});
 	}
 
@@ -407,27 +417,95 @@ class NeuralNetwork_Hamming extends NeuralNetwork {
 		} while (lengthVector > 0.1);
 
 		console.log(cnt);
-		console.log(activates);
+		console.log(activates.map(val => {
+			return (val === 0) ? 0 : val.toFixed(6);
+		}));
 
 		const indexAnswer = activates.indexOf(Math.max(...activates));
 		const chart = [indexAnswer,cnt];
 
 		return [chart,chartLength];
 	}
+}
 
-	_hamming(inputs,j,outputs_cnt) {
+class BAM extends NeuralNetwork {
+	
+	init({input_cnt, output_cnt}) {
+		const defineWeight = _ => 0;
+		
 		const layers = this.layers;
-		const epsilon = -(1/outputs_cnt)+0.001;
+		const input_lay = new Layer(input_cnt);
+		input_lay.init(output_cnt, defineWeight);
+		layers.push(input_lay);
+	}
 
-		layers[0].weights[j] = layers[0].weights[j].map( (weight,i) => { //рассчет весов первого слоя
-			return inputs[i]/2;
+	train(db) {
+		let W = this.layers[0].weights;
+		db.forEach(({A,B}) => {
+			const At = math.transpose(A);
+			const multiply = math.multiply(At,B); //умножение транспонированной входной матрицы А и выходной B
+			W = math.add(W,multiply); //нахождение суммы умножений матриц (входной А и выходной B) обучающей выборки
 		});
-		layers[1].weights[j] = layers[1].weights[j].map( (weight,i) => { //рассчет весов слоя категорий
-			return (i === j) ? 1 : epsilon;
+
+		this.layers[0].weights = W;
+
+	}
+
+	run(A) {
+
+		const calcVectors = (vector, W, Wt) => {
+			const newA = math.multiply(vector, Wt); //нахождение нового вектора A
+			const newB = math.multiply(newA, W); //нахождение нового вектора B
+			return [newA.map(vector => this.#sigmoid(vector)), newB.map(vector => this.#sigmoid(vector))];
+		};
+
+		const arraysEqual = ([a],[b]) => {
+			for (let i=0; i<a.length; i++) {
+				if (a[i] !== b[i]) return false;
+			}
+
+			return true;
+		};
+
+		console.log(A.map(vector => this.#sigmoid(vector))); //лог входного вектора А
+		let cnt = 0;
+
+		const W = this.layers[0].weights; //веса
+		const Wt = math.transpose(W); //транспонированная матрица весов
+
+		let oldB = math.multiply(A,W).map(vector => this.#sigmoid(vector)); //первое вычисление B
+		let [ newA, newB ] = calcVectors(oldB, W, Wt); //новые вычисления A и B
+
+		while (!arraysEqual(A, newA) && !arraysEqual(oldB, newB)) { //проверка на эквиваленцию
+			A = newA;
+			oldB = newB;
+			[newA, newB] = calcVectors(oldB, W, Wt);
+
+			cnt += 1;
+		}
+		
+		console.log(cnt); //количество итераций для нахождения эквиваленции
+		console.log(newB); //лог выходного вектора B, ассоциированного с А
+	}
+
+
+	#threshold(vector) { //пороговая функция
+		return vector.map(val => {
+			if (val > 0) return 1;
+			else if (val < 0) return 0;
+			else if (val === 0) return 0;
 		});
 	}
+
+	#sigmoid(vector) { //сигмоида
+		return vector.map(x => {
+			return 1/(1+math.exp(-x));
+		});
+	}
+
 }
 
 module.exports.NeuralNetwork_BackProp = NeuralNetwork_BackProp;
 module.exports.NeuralNetwork_CounterProp = NeuralNetwork_CounterProp;
 module.exports.NeuralNetwork_Hamming = NeuralNetwork_Hamming;
+module.exports.BAM = BAM;
