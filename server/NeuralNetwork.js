@@ -332,12 +332,12 @@ class NeuralNetwork_Hamming extends NeuralNetwork {
 		};
 
 		const layers = this.layers;
-		const hiddenLayer = new Layer(output_cnt, defineWeight);
-		hiddenLayer.init(input_cnt);
+		const hiddenLayer = new Layer(output_cnt);
+		hiddenLayer.init(input_cnt, defineWeight);
 		layers.push(hiddenLayer);
 
-		const outputLayer = new HammingOutputLayer(output_cnt, defineWeight);
-		outputLayer.init(layers[layers.length - 1].cnt);
+		const outputLayer = new HammingOutputLayer(output_cnt);
+		outputLayer.init(layers[layers.length - 1].cnt, defineWeight);
 		layers.push(outputLayer);
 	}
 
@@ -397,10 +397,6 @@ class NeuralNetwork_Hamming extends NeuralNetwork {
 		let lengthVector;
 		let cnt = 0; //количество итераций
 
-		const chartLength = [
-			['Количество итерация','Разность векторов']
-		];
-
 		do {
 			const newActivates = calcActivate(activates, layers[1]); //активации после категорий
 
@@ -412,19 +408,16 @@ class NeuralNetwork_Hamming extends NeuralNetwork {
 			activates = newActivates;
 			cnt += 1;
 
-			chartLength.push([cnt,lengthVector]);
-
 		} while (lengthVector > 0.1);
 
-		console.log(cnt);
 		console.log(activates.map(val => {
 			return (val === 0) ? 0 : val.toFixed(6);
 		}));
 
 		const indexAnswer = activates.indexOf(Math.max(...activates));
-		const chart = [indexAnswer,cnt];
+		console.log(indexAnswer);
 
-		return [chart,chartLength];
+		return indexAnswer;
 	}
 }
 
@@ -470,22 +463,29 @@ class BAM extends NeuralNetwork {
 		console.log(A.map(vector => this.#sigmoid(vector))); //лог входного вектора А
 		let cnt = 0;
 
-		const W = this.layers[0].weights; //веса
-		const Wt = math.transpose(W); //транспонированная матрица весов
+		let W = this.layers[0].weights; //веса
+		let Wt = math.transpose(W); //транспонированная матрица весов
 
-		let oldB = math.multiply(A,W).map(vector => this.#sigmoid(vector)); //первое вычисление B
-		let [ newA, newB ] = calcVectors(oldB, W, Wt); //новые вычисления A и B
+		let B, newA, newB;
+		if (A.flat().length === 20) {
+			[W, Wt] = [Wt, W];
+		}
 
-		while (!arraysEqual(A, newA) && !arraysEqual(oldB, newB)) { //проверка на эквиваленцию
+		B = math.multiply(A,W).map(vector => this.#sigmoid(vector)); //первое вычисление B
+		[ newA, newB ] = calcVectors(B, W, Wt); //новые вычисления A и B
+
+		while (!arraysEqual(A, newA) && !arraysEqual(B, newB)) { //проверка на эквиваленцию
 			A = newA;
-			oldB = newB;
-			[newA, newB] = calcVectors(oldB, W, Wt);
+			B = newB;
+			[newA, newB] = calcVectors(B, W, Wt);
 
 			cnt += 1;
 		}
 		
 		console.log(cnt); //количество итераций для нахождения эквиваленции
 		console.log(newB); //лог выходного вектора B, ассоциированного с А
+
+		return newB;
 	}
 
 

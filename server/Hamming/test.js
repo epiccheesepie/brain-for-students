@@ -70,17 +70,64 @@ function tests(net, dir) {
 
 }
 
- const db = JSON.parse(fs.readFileSync('./db.json'));
- const db_noise_1 = JSON.parse(fs.readFileSync('./db_noise_1.json'));
- const db_noise_4 = JSON.parse(fs.readFileSync('./db_noise_4.json'));
- const db_noise_8 = JSON.parse(fs.readFileSync('./db_noise_8.json'));
+function addNoise(db,q) { //quantity
+	return db.map(({inputs,outputs}) => {
+		const newInputs = inputs.concat();
 
+		for (let i=0;i<q;i++) {
+			if (newInputs[i] === 1) {
+				newInputs[i] = -1;
+			} else {
+				newInputs[i] = 1;
+			}
+		}
+		return {inputs: newInputs, outputs};
+	});
+}
+
+ const db = JSON.parse(fs.readFileSync('./db.json'));
+ const db_noise_1 = addNoise(db,1);
+ const db_noise_4 = addNoise(db,4);
+ const db_noise_8 = addNoise(db,8);
+ const db_noise_12 = addNoise(db,12);
+ const db_noise_16 = addNoise(db,16);
+ const db_noise_18 = addNoise(db,18);
+ const db_noise_20 = addNoise(db,20);
+ const db_noise_21 = addNoise(db,21);
+
+ const test_db = [
+	{q: (0/42 * 100).toFixed(0), db: db},
+	 {q: (1/42 * 100).toFixed(0), db: db_noise_1},
+	 {q: (4/42 * 100).toFixed(0), db: db_noise_4},
+	 {q: (8/42 * 100).toFixed(0), db: db_noise_8},
+	 {q: (12/42 * 100).toFixed(0), db: db_noise_12},
+	 {q: (16/42 * 100).toFixed(0), db: db_noise_16},
+	 {q: (18/42 * 100).toFixed(0), db: db_noise_18},
+	 {q: (20/42 * 100).toFixed(0), db: db_noise_20},
+	 {q: (21/42 * 100).toFixed(0), db: db_noise_21}
+ ];
+
+ const chart = [
+	['Процент искажений','Процент верных ответов']
+ ];
+
+ 
  const net = new NeuralNetwork();
  net.train(db);
- db.forEach( val => {
-	net.run(val.inputs);
+
+ test_db.forEach(({q,db}) => {
+	let rightCnt = 0;
+	db.forEach( (val,i) => {
+		const answer = net.run(val.inputs);
+		if (answer === i) {
+			rightCnt += 1;
+		}
+	});
+
+	chart.push([+q,+(rightCnt/14 * 100).toFixed(0)]);
  });
- 
+
+  fs.writeFileSync('./chart.json', JSON.stringify(chart));
 // fs.writeFileSync('./chart.json', JSON.stringify(chart));
 // fs.writeFileSync('./chartLength.json', JSON.stringify(chartLength));
 

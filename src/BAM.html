@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="ru">
+	<head>
+		<meta charset="utf8">
+		<title>Lab 4</title>
+		<link href="./solution.css" type="text/css" rel="stylesheet" />
+		<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400&display=swap" rel="stylesheet">
+	</head>
+	<style>
+		.left {
+			width: 100%;
+		} .left:before {
+			display: none;
+		} .screen--right {
+			height: 200px;
+		} .right__interface {
+			margin-left: 40px;
+		}
+	</style>
+	<body>
+		<div id="root">
+			<div class="left">
+				<div class="container">
+					<div class="left__pngs">
+						<div id="1png" class="screen screen--small"></div>
+						<div id="2png" class="screen screen--small"></div>
+						<div id="3png" class="screen screen--small"></div>
+						<div id="4png" class="screen screen--small"></div>
+						<div id="5png" class="screen screen--small"></div>
+					</div>	
+					<div class="left__interface">
+						<div class="screen" id="_screen"></div>
+						<div class="menu">
+							<button id="subm" class="button">
+								<span>Вектор</span>
+							</button>
+							<button id="clear" class="button">
+								<span>Очистить</span>
+							</button>
+						</div>
+					</div>
+					<div class="right__interface">
+						<div class="screen screen--right" id="_screenRight"></div>
+						<div class="menu">
+							<button id="subm_right" class="button">
+								<span>Вектор</span>
+							</button>
+							<button id="clear_right" class="button">
+								<span>Очистить</span>
+							</button>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<script>
+
+class Interface {
+	constructor(elem) {
+		this.elem = elem;
+		this.pixel = 50;
+		this.width = elem.offsetWidth;
+		this.height = elem.offsetHeight;
+	}
+
+	init() {
+		const elem = this.elem;
+		for(let x=0; x<this.width; x+=this.pixel) {
+			for(let y=0; y<this.height; y+=this.pixel) {
+				let div = document.createElement('div');
+				div.dataset.id = -1;
+				div.addEventListener('click', (e) => {
+					if (div.classList.contains('black')) {
+						div.classList.remove('black');
+						div.dataset.id = -1;
+					}
+					else {
+						div.classList.add('black');
+						div.dataset.id = 1;
+					}
+				});
+				elem.appendChild(div);
+			}
+		}
+	}
+
+	calculate(elem=this.elem) {
+		return Array.prototype.map.call(elem.children, (child) => {
+			return +child.dataset.id;
+		});
+	}
+
+	clear(elem=this.elem) {
+		Array.prototype.forEach.call(elem.children, (child) => {
+			child.classList.remove('black');
+			child.dataset.id = -1;
+		});
+	}
+}
+
+function buildPng() {
+	const arr = [
+		{id: '1png', png: [1,1,1,1,1,-1,-1,1,-1,-1,-1,-1,1,-1,-1,-1,-1,1,-1,-1,-1,-1,1,-1,-1]},
+		{id: '2png', png: [1,-1,-1,-1,1,1,1,-1,-1,1,1,-1,1,-1,1,1,-1,-1,1,1,1,-1,-1,-1,1]},
+		{id: '3png', png: [-1,1,1,1,1,1,-1,-1,-1,-1,1,-1,-1,-1,-1,1,-1,-1,-1,-1,-1,1,1,1,1]},
+		{id: '4png', png: [-1,1,1,1,-1,1,-1,-1,-1,1,1,1,1,1,1,1,-1,-1,-1,1,1,-1,-1,-1,1]},
+		{id: '5png', png: [-1,1,-1,1,-1,1,-1,1,-1,1,1,-1,-1,-1,1,-1,1,-1,1,-1,-1,-1,1,-1,-1]}
+	];
+
+	arr.forEach((obj) => {
+		obj.png.forEach(id => {
+			let div = document.createElement('div');
+			if (id === 1) {
+				div.classList.add('black');
+			}
+			document.getElementById(obj.id).appendChild(div);
+		})
+	});
+}
+
+const elem = new Interface(document.getElementById('_screen'));
+elem.init();
+buildPng();
+
+const right = new Interface(document.getElementById('_screenRight'));
+right.init(true);
+
+document.querySelector('#subm').addEventListener('click', (e) => {
+
+	right.clear();
+
+	const vector = elem.calculate();
+	console.log(vector);
+	(async () => {
+		const response = await fetch('http://localhost:3000/', {
+			method: 'POST',
+			body: JSON.stringify({'vector': vector}),
+			headers: {
+				'Content-Type': 'application/json'
+			}
+		});
+		const answer = await response.json();
+		console.log(answer);
+
+		const rights = document.querySelectorAll('#_screenRight div');
+		rights.forEach((div,i) => {
+			if (answer[i]) {
+				div.classList.add('black');
+				div.dataset.id = 1;
+			}
+		});
+	})();
+});
+
+document.querySelector('#subm_right').addEventListener('click', (e) => {
+
+elem.clear();
+
+const vector = right.calculate();
+console.log(vector);
+(async () => {
+	const response = await fetch('http://localhost:3000/', {
+		method: 'POST',
+		body: JSON.stringify({'vector': vector}),
+		headers: {
+			'Content-Type': 'application/json'
+		}
+	});
+	const answer = await response.json();
+	console.log(answer);
+
+	const lefts = document.querySelectorAll('#_screen div');
+	lefts.forEach((div,i) => {
+		if (answer[i]) {
+			div.classList.add('black');
+			div.dataset.id = 1;
+		}
+	});
+})();
+});
+
+document.querySelector('#clear').addEventListener('click', (e) => {
+	elem.clear();
+});
+
+document.querySelector('#clear_right').addEventListener('click', (e) => {
+	right.clear();
+});
+
+		</script>
+	</body>
+</html>

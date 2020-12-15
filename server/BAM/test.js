@@ -72,9 +72,54 @@ function tests(net, dir) {
 
 }
 
+function addNoise(db,q) { //quantity
+	return db.map(({A,B}) => {
+		// const newA = A.flat();
+
+		// for (let i=0;i<q;i++) {
+		// 	if (newA[i] === 1) {
+		// 		newA[i] = -1;
+		// 	} else {
+		// 		newA[i] = 1;
+		// 	}
+		// }
+		// return {A: [newA], B};
+
+		const newB = B.flat();
+
+		for (let i=0;i<q;i++) {
+			if (newB[i] === 1) {
+				newB[i] = -1;
+			} else {
+				newB[i] = 1;
+			}
+		}
+		return {A, B: [newB]};
+	});
+}
+
 const db = JSON.parse(fs.readFileSync('./db.json'));
-const A = [[1,1,1,1,1,-1,-1,1,-1,-1,-1,-1,1,-1,-1,-1,-1,1,-1,-1,-1,-1,1,-1,-1]];
-const A_d = [[1,-1,-1,-1,1,1,1,-1,-1,1,1,-1,1,-1,1,1,-1,-1,1,1,1,-1,-1,-1,1]];
+
+const db_noise_1 = addNoise(db,1);
+const db_noise_2 = addNoise(db,2);
+const db_noise_4 = addNoise(db,4);
+const db_noise_6 = addNoise(db,6);
+const db_noise_8 = addNoise(db,8);
+const db_noise_9 = addNoise(db,9);
+const db_noise_10 = addNoise(db,10);
+const db_noise_12 = addNoise(db,12);
+
+const test_db = [
+{q: (0/20 * 100).toFixed(0), db: db},
+	{q: (1/20 * 100).toFixed(0), db: db_noise_1},
+	{q: (2/20 * 100).toFixed(0), db: db_noise_2},
+	{q: (4/20 * 100).toFixed(0), db: db_noise_4},
+	{q: (6/20 * 100).toFixed(0), db: db_noise_6},
+	{q: (8/20 * 100).toFixed(0), db: db_noise_8},
+	{q: (9/20 * 100).toFixed(0), db: db_noise_9},
+	{q: (10/20 * 100).toFixed(0), db: db_noise_10},
+	{q: (12/20 * 100).toFixed(0), db: db_noise_12}
+];
 
 const net = new BAM();
 net.init({
@@ -83,8 +128,43 @@ net.init({
 });
 
 net.train(db);
-net.run(A);
-net.run(A_d);
+
+const defAnswer = ([vector]) => {
+	return vector.map(val => {
+		if (val < 0.00001) return -1;
+		else return 1;
+	});
+};
+
+const arraysEqual = (a,b) => {
+	for (let i=0; i<a.length; i++) {
+		if (a[i] !== b[i]) return false;
+	}
+
+	return true;
+};
+
+const chart = [
+	['Процент искажений','Процент верных ответов']
+];
+
+test_db.forEach(({q,db}) => {
+	let rightCnt = 0;
+	db.forEach( (val) => {
+		const answer = defAnswer(net.run(val.B));
+		const B = val.A.flat();
+		if (arraysEqual(answer,B)) {
+			rightCnt += 1;
+		}
+	});
+
+	chart.push([+q,+(rightCnt/5 * 100).toFixed(0)]);
+});
+
+fs.writeFileSync('./chartB.json', JSON.stringify(chart));
+
+// console.log(defAnswer(net.run(db[0].A)));
+// console.log(defAnswer(net.run(db_1[0].A)));
 
 
  
