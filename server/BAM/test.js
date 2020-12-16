@@ -163,13 +163,6 @@ test_db.forEach(({q,db}) => {
 
 fs.writeFileSync('./chartB.json', JSON.stringify(chart));
 
-// console.log(defAnswer(net.run(db[0].A)));
-// console.log(defAnswer(net.run(db_1[0].A)));
-
-
- 
-// fs.writeFileSync('./chart.json', JSON.stringify(chart));
-// fs.writeFileSync('./chartLength.json', JSON.stringify(chartLength));
 
 
 

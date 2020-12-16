@@ -1,4 +1,4 @@
-const { NeuralNetwork_Hamming: NeuralNetwork } = require('../NeuralNetwork.js');
+const { Hamming } = require('../NeuralNetwork.js');
 const fs = require('file-system');
 const PNG = require('pngjs').PNG;
 
@@ -85,51 +85,54 @@ function addNoise(db,q) { //quantity
 	});
 }
 
- const db = JSON.parse(fs.readFileSync('./db.json'));
- const db_noise_1 = addNoise(db,1);
- const db_noise_4 = addNoise(db,4);
- const db_noise_8 = addNoise(db,8);
- const db_noise_12 = addNoise(db,12);
- const db_noise_16 = addNoise(db,16);
- const db_noise_18 = addNoise(db,18);
- const db_noise_20 = addNoise(db,20);
- const db_noise_21 = addNoise(db,21);
+const db = JSON.parse(fs.readFileSync('./db.json'));
+const db_noise_1 = addNoise(db,1);
+const db_noise_4 = addNoise(db,4);
+const db_noise_8 = addNoise(db,8);
+const db_noise_12 = addNoise(db,12);
+const db_noise_16 = addNoise(db,16);
+const db_noise_18 = addNoise(db,18);
+const db_noise_20 = addNoise(db,20);
+const db_noise_21 = addNoise(db,21);
 
- const test_db = [
+const test_db = [
 	{q: (0/42 * 100).toFixed(0), db: db},
-	 {q: (1/42 * 100).toFixed(0), db: db_noise_1},
-	 {q: (4/42 * 100).toFixed(0), db: db_noise_4},
-	 {q: (8/42 * 100).toFixed(0), db: db_noise_8},
-	 {q: (12/42 * 100).toFixed(0), db: db_noise_12},
-	 {q: (16/42 * 100).toFixed(0), db: db_noise_16},
-	 {q: (18/42 * 100).toFixed(0), db: db_noise_18},
-	 {q: (20/42 * 100).toFixed(0), db: db_noise_20},
-	 {q: (21/42 * 100).toFixed(0), db: db_noise_21}
- ];
+	{q: (1/42 * 100).toFixed(0), db: db_noise_1},
+	{q: (4/42 * 100).toFixed(0), db: db_noise_4},
+	{q: (8/42 * 100).toFixed(0), db: db_noise_8},
+	{q: (12/42 * 100).toFixed(0), db: db_noise_12},
+	{q: (16/42 * 100).toFixed(0), db: db_noise_16},
+	{q: (18/42 * 100).toFixed(0), db: db_noise_18},
+	{q: (20/42 * 100).toFixed(0), db: db_noise_20},
+	{q: (21/42 * 100).toFixed(0), db: db_noise_21}
+];
 
- const chart = [
+const chart = [
 	['Процент искажений','Процент верных ответов']
- ];
+];
 
  
- const net = new NeuralNetwork();
- net.train(db);
+const net = new Hamming();
+net.init({
+	input_cnt: 42,
+	output_cnt: 14
+});
+net.train(db);
 
- test_db.forEach(({q,db}) => {
-	let rightCnt = 0;
-	db.forEach( (val,i) => {
-		const answer = net.run(val.inputs);
-		if (answer === i) {
-			rightCnt += 1;
-		}
-	});
+db.forEach( (val) => {
+	const answer = net.run(val.inputs);
+	console.log(answer);
+});
 
-	chart.push([+q,+(rightCnt/14 * 100).toFixed(0)]);
- });
+// test_db.forEach(({q,db}) => {
+// 	db.forEach( (val,i) => {
+// 		const answer = net.run(val.inputs);
+// 		console.log(answer);
+// 	});
 
-  fs.writeFileSync('./chart.json', JSON.stringify(chart));
+// });
+
 // fs.writeFileSync('./chart.json', JSON.stringify(chart));
-// fs.writeFileSync('./chartLength.json', JSON.stringify(chartLength));
 
 
 

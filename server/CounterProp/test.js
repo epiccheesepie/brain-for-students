@@ -86,13 +86,10 @@ let def;
 while (!done) {
     const net = new NeuralNetwork();
     net.init({
-        hidden_neurons_cnt: 6
+		input_cnt: 25,
+		output_cnt: 5,
+        hidden_neurons_cnt: 5
     });
-    // console.log(net.run(db[0].input));
-    // console.log(net.run(db[1].input));
-    // console.log(net.run(db[2].input));
-    // console.log(net.run(db[3].input));
-    // console.log(net.run(db[4].input));
     
     const chart = net.train({
         data: db,
@@ -124,8 +121,8 @@ while (!done) {
 
 }
 
-tests(def,'../../src/png/1');
-tests(def,'../../src/png/3');
+// tests(def,'../../src/png/1');
+// tests(def,'../../src/png/3');
     // console.log(net.run(db[0].input));
     // console.log(net.run(db[1].input));
     // console.log(net.run(db[2].input));

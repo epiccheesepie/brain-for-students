@@ -20,7 +20,6 @@ class NeuralNetwork {
 	}
 
 }
-
 class Layer {
 	constructor(cnt,bias=0) {
 		this.cnt = cnt;
@@ -65,8 +64,6 @@ class NeuralNetwork_BackProp extends NeuralNetwork {
 
 	run(inputs) { //определение результата
 
-		const layers = this.layers;
-
 		const calcActivate = (inputs,lay) => { //рассчет активации нейронов в слое
 			const activates = [];
 			const { cnt, weights, bias } = lay; //количество нейронов в слое; веса; биас
@@ -81,6 +78,7 @@ class NeuralNetwork_BackProp extends NeuralNetwork {
 			return activates;
 		};
 
+		const layers = this.layers;
 		let outputs = [];
 		layers.forEach( (lay) => {
 			inputs = calcActivate(inputs,lay);
@@ -175,14 +173,14 @@ class NeuralNetwork_BackProp extends NeuralNetwork {
 
 class NeuralNetwork_CounterProp extends NeuralNetwork {
 
-	init({ input_cnt=25, output_cnt=5, hidden_neurons_cnt }) { //начальная инициализация
+	init({ input_cnt, output_cnt, hidden_neurons_cnt }) { //начальная инициализация
 		const layers = this.layers;
 		const defineWeight = _ => {
 			return Math.random();
 		};
 
-		const cohonen = new Layer(hidden_neurons_cnt, defineWeight);
-		cohonen.init(input_cnt);
+		const cohonen = new Layer(hidden_neurons_cnt);
+		cohonen.init(input_cnt, defineWeight);
 		layers.push(cohonen);
 
 		const grossberg = new OutputLayer(output_cnt);
@@ -253,16 +251,11 @@ class NeuralNetwork_CounterProp extends NeuralNetwork {
 
 			const activates = this.#calcActivates(inputs,lay); //рассчет активаций
 			const index = activates.indexOf(Math.max(...activates)); //индекс выигравшего нейрона слоя Кохонена
-			const weights = lay.weights[index]; //веса соединенные с выигравшим нейроном слоя Кохонена
-			
 			const weightsCohonen = lay.weights; //все веса слоя Кохонена (для графика)
+			let weights = weightsCohonen[index]; //веса соединенные с выигравшим нейроном слоя Кохонена
 
-			//weights = weights.map((weight,i) => weight+speedA*(inputs[i]-weight) ); [ПОЧ НЕ РАБОТАЕТ]
-			for (let i=0; i<weights.length; i++) {
-				const weight = weights[i]; //текущее значение веса
-				const newWeight = weight+speedA*(inputs[i]-weight); //новое значение веса
-				weights[i] = newWeight;
-			}
+			weights = weights.map((weight,i) => weight+speedA*(inputs[i]-weight) ); //рассчитываем новые веса
+			lay.weights[index] = weights;
 			
 			inputs = activates;
 
@@ -274,7 +267,7 @@ class NeuralNetwork_CounterProp extends NeuralNetwork {
 		return [weightBack.grossberg, weightBack.cohonen];
 	}
 
-	train({ data, iteration, speedA, speedB}) {
+	train({ data, iteration=300, speedA=0.14, speedB=0.1}) {
 		const chartItems = {
 			grossbergWeights: [],
 			cohonenWeights: [],
@@ -319,15 +312,10 @@ class NeuralNetwork_CounterProp extends NeuralNetwork {
 	}
 }
 
-class HammingOutputLayer extends Layer {
-	constructor(cnt,weights,activates) {
-		super(cnt,weights,activates);
-	}
-}
-class NeuralNetwork_Hamming extends NeuralNetwork {
+class Hamming extends NeuralNetwork {
 
 	init({ input_cnt, output_cnt }) { //начальная инициализация
-		const defineWeight = _ => {
+		const defineWeight = _ => { //чем заполнить начальные веса
 			return null;
 		};
 
@@ -336,16 +324,12 @@ class NeuralNetwork_Hamming extends NeuralNetwork {
 		hiddenLayer.init(input_cnt, defineWeight);
 		layers.push(hiddenLayer);
 
-		const outputLayer = new HammingOutputLayer(output_cnt);
+		const outputLayer = new OutputLayer(output_cnt);
 		outputLayer.init(layers[layers.length - 1].cnt, defineWeight);
 		layers.push(outputLayer);
 	}
 
 	train(data) {
-		const input_cnt = data[0].inputs.length;
-		const output_cnt = data[0].outputs.length;
-
-		this.init({input_cnt, output_cnt});
 		
 		data.forEach( ({inputs, outputs}) => {
 			const indexAnswer = outputs.indexOf(1); //индекс ответа
@@ -366,9 +350,6 @@ class NeuralNetwork_Hamming extends NeuralNetwork {
 	}
 
 	run(inputs) {
-		const T = inputs.length / 2;
-		const layers = this.layers;
-
 		const thresholdFunc = (activates) => { //пороговая функция
 			return activates.map( x => {
 				if (x <= 0) {
@@ -381,6 +362,13 @@ class NeuralNetwork_Hamming extends NeuralNetwork {
 			});
 		};
 
+		const reduceOutput = (vector) => { //преобразовывает выходной вектор
+			return vector.map( x => {
+				if (x <= 0) return 0;
+				else return 1;
+			});
+		}
+
 		const calcActivate = (inputs,lay) => { //рассчет активации нейронов в слое
 			const activates = [];
 			const { cnt, weights} = lay; //количество нейронов в слое; веса
@@ -392,6 +380,9 @@ class NeuralNetwork_Hamming extends NeuralNetwork {
 
 			return thresholdFunc(activates);
 		};
+
+		const T = inputs.length / 2;
+		const layers = this.layers;
 
 		let activates = calcActivate(inputs, layers[0]); //активации первого слоя
 		let lengthVector;
@@ -410,21 +401,14 @@ class NeuralNetwork_Hamming extends NeuralNetwork {
 
 		} while (lengthVector > 0.1);
 
-		console.log(activates.map(val => {
-			return (val === 0) ? 0 : val.toFixed(6);
-		}));
-
-		const indexAnswer = activates.indexOf(Math.max(...activates));
-		console.log(indexAnswer);
-
-		return indexAnswer;
+		return reduceOutput(activates);
 	}
 }
 
 class BAM extends NeuralNetwork {
 	
 	init({input_cnt, output_cnt}) {
-		const defineWeight = _ => 0;
+		const defineWeight = _ => 0; //какими значениями инициализировать начальные веса
 		
 		const layers = this.layers;
 		const input_lay = new Layer(input_cnt);
@@ -507,5 +491,5 @@ class BAM extends NeuralNetwork {
 
 module.exports.NeuralNetwork_BackProp = NeuralNetwork_BackProp;
 module.exports.NeuralNetwork_CounterProp = NeuralNetwork_CounterProp;
-module.exports.NeuralNetwork_Hamming = NeuralNetwork_Hamming;
+module.exports.Hamming = Hamming;
 module.exports.BAM = BAM;
