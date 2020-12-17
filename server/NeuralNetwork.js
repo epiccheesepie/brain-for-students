@@ -21,19 +21,23 @@ class NeuralNetwork {
 
 }
 class Layer {
-	constructor(cnt,bias=0) {
+	constructor(cnt) {
 		this.cnt = cnt;
 		this.weights = [];
 		this.activates = [];
-		this.bias = bias;
+		this.bias = [];
 	}
 
 	init(length, func) {
-		for (let i=0;i<this.cnt;i++) {
-			const w = this.weights[i] = [];
+
+		const { cnt, weights, bias } = this;
+
+		for (let i=0;i<cnt;i++) {
+			const w = weights[i] = [];
 			for (let j=0;j<length;j++) {
-				w.push(func());
-			}
+                w.push(func());
+            }
+            bias.push(func());
 		}
 	}
 }
@@ -43,16 +47,15 @@ class OutputLayer extends Layer {
 	}
 }
 
-class NeuralNetwork_BackProp extends NeuralNetwork {
+class BackProp extends NeuralNetwork {
 
 	init({ input_cnt, output_cnt, hidden_cnt, hidden_neurons_cnt }) { //начальная инициализация
 		const layers = this.layers;
-		const defineWeight = _ => {
-			return Math.random() - 0.5;
-		};
+		const defineWeight = _ => Math.random() - 0.5;
+        
 		for (let i=0;i<hidden_cnt;i++) {
-			const lay = new Layer(hidden_neurons_cnt, defineWeight);
-			lay.init(input_cnt);
+			const lay = new Layer(hidden_neurons_cnt);
+			lay.init(input_cnt, defineWeight);
 			layers.push(lay);
 			input_cnt = lay.cnt;
 		}
@@ -64,13 +67,13 @@ class NeuralNetwork_BackProp extends NeuralNetwork {
 
 	run(inputs) { //определение результата
 
-		const calcActivate = (inputs,lay) => { //рассчет активации нейронов в слое
+		const calcActivates = (inputs,lay) => { //рассчет активации нейронов в слое
 			const activates = [];
 			const { cnt, weights, bias } = lay; //количество нейронов в слое; веса; биас
 
 			for (let i=0; i<cnt; i++) {
-				//const net = math.multiply(inputs,weights[i]) + bias[i];
-				const net = math.multiply(inputs,weights[i]) + bias; //умножение инпутов и весов + биас
+				// const net = math.multiply(inputs,weights[i]);
+				const net = math.add(math.multiply(inputs,weights[i]), bias[i]); //умножение инпутов и весов + биас
 				const x = 1/(1+math.exp(-net)); //функция активации (сигмоида)
 				activates.push(x);
 			}
@@ -79,13 +82,13 @@ class NeuralNetwork_BackProp extends NeuralNetwork {
 		};
 
 		const layers = this.layers;
-		let outputs = [];
 		layers.forEach( (lay) => {
-			inputs = calcActivate(inputs,lay);
-			lay.activates = inputs;
-		});
-		outputs = inputs;
-
+            const activates = calcActivates(inputs,lay);
+            lay.activates = activates;
+            inputs = activates;
+        });
+        
+        const outputs = layers[layers.length-1].activates;
 		return outputs;
 	}
 
@@ -97,13 +100,13 @@ class NeuralNetwork_BackProp extends NeuralNetwork {
 		let error;
 		let cnt = 0;
 		do {
-			const errors = [];
+			const errors = []; //массив среднеквадратичных ошибок выборки
 			data.forEach(val => {
 				const errorInSet = this._backProp(val.inputs,val.outputs,speed);
-				errors.push(errorInSet);
+				errors.push(errorInSet); 
 			});
 
-			error = errors.reduce((sum, a) => sum+a, 0) / errors.length;
+			error = errors.reduce((sum, a) => sum+a, 0) / errors.length; //среднеарифметическая ошибка по среднеквадратичным выборки
 			cnt += 1;
 
 			chart.push([
@@ -112,66 +115,59 @@ class NeuralNetwork_BackProp extends NeuralNetwork {
 			])
 
 			if (cnt > 5000) break;
-		}
-		while (err < error);
+		} while (err < error);
 
-		return [cnt, chart];
+		return [cnt, chart]; //возвращаем количество итераций и график
 	}
 
 	_backProp(inputs, outputs, speed) { //back propagation
-		const train_outputs = this.run(inputs);	
-		const errors = [];
+        const train_outputs = this.run(inputs);
+        const layers = this.layers; //слои сети
+        
+		const errors = []; //массив из векторов ошибок всех слоев
 		errors.push(math.add(outputs,math.multiply(train_outputs,-1))); //ошибка в последнем слое
-		const error = (math.square(errors[0])).reduce((sum, a) => sum+a, 0); //вычисление ошибки для формирования количества циклов
-
-		const layers = this.layers; //слои сети
 
 		layers.reverse().forEach((lay,index,arr) => {
 			if (index === arr.length-1) return;
-			let d = [];
-			let weights_to_d = [];
-			//let bias_to_d = [];
-			let cnt = lay.weights[0].length;
-			let ix = 0;
+			const d = []; //вектор ошибок текущего слоя
+            const cnt = lay.weights[0].length; //количество нейронов в прошлом слое
+            let weights_to_d = []; //веса, которые участвую в расчете новой ошибки
 			for(let i=0;i<cnt;i++) {
 				for(let j=0;j<lay.cnt;j++) {
-					weights_to_d.push(lay.weights[j][ix]);
-					//bias_to_d.push(lay.bias[j]);
+					weights_to_d.push(lay.weights[j][i]);
 				}
-				ix++;
-				//let dx = math.multiply(errors[0],math.add(weights_to_d,bias_to_d));
-				let dx = math.multiply(errors[0],weights_to_d);
+				const dx = math.multiply(errors[0],weights_to_d); //ошибка в нейроне
 				d.push(dx);
 				weights_to_d = [];
-				//bias_to_d = [];
 			}
+
 			errors.unshift(d);
 		});
 
 		layers.reverse().forEach((lay,index) => {
-			let weights = [];
-			for(let i=0;i<lay.cnt;i++) {
-				let weights_x = [];
-				//let bias_x = [];
-				for(let j=0;j<lay.weights[i].length;j++) {
-					let w = lay.weights[i][j];
-					//let b = lay.bias[j];
-					let f = lay.activates[i]*(1-lay.activates[i]);
-					weights_x.push(w+errors[index][i]*f*inputs[j]*speed);
-					//bias_x.push(b+errors[index][i]*f*inputs[j]*speed);
+			const newWeights = []; //новые веса слоя
+			for(let i=0;i<lay.cnt;i++) { //проходимся по каждому нейрону
+				const weights_x = []; //новый массив весов, соединенный с рассматриваемым нейроном
+                const cnt = lay.weights[i].length; //количество нейронов в прошлом слое
+				for(let j=0;j<cnt;j++) {
+					const w = lay.weights[i][j]; //текущий вес
+                    const f = lay.activates[i]*(1-lay.activates[i]); //производная сигмоиды
+                    const newWeight = w+errors[index][i]*f*inputs[j]*speed;
+					weights_x.push(newWeight);
 				}
-				weights.push(weights_x);
-				//lay.bias = bias_x;
+				newWeights.push(weights_x);
 			}
-			lay.weights = weights;
+			lay.bias = math.add(lay.bias,errors[index]); //расчет новых биасов слоя
+			lay.weights = newWeights;
 			inputs = lay.activates;
 		});
 
+        const error = (math.square(errors[errors.length-1])).reduce((sum, a) => sum+a, 0); //вычисление ошибки для формирования количества циклов
 		return error;
 	}
 }
 
-class NeuralNetwork_CounterProp extends NeuralNetwork {
+class CounterProp extends NeuralNetwork {
 
 	init({ input_cnt, output_cnt, hidden_neurons_cnt }) { //начальная инициализация
 		const layers = this.layers;
@@ -188,16 +184,18 @@ class NeuralNetwork_CounterProp extends NeuralNetwork {
 		layers.push(grossberg);
 	}
 
-	#calcActivates(inputs, lay) {
+	#calcActivates(inputs, lay, i) {
+		const last = this.layers.length - 1;
 		const activates = [];
 		const { cnt, weights, bias } = lay;
 
 		for (let i=0;i<cnt;i++) {
-			const net = math.multiply(inputs,weights[i]) + bias; //умножение инпутов и весов + биас
+			const net = math.multiply(inputs,weights[i]); //умножение инпутов и весов
+			// const net = math.add(math.multiply(inputs,weights[i]), bias[i]); //умножение инпутов и весов + биас
 			activates.push(net); //запись в нейроны
 		}
 
-		if (lay.constructor.name === 'OutputLayer') {
+		if (last === i) {
 			return activates;
 		}
 
@@ -213,8 +211,8 @@ class NeuralNetwork_CounterProp extends NeuralNetwork {
 
 	run(inputs) { //определение результата
 		let outputs = [];
-		this.layers.forEach( (lay) => {
-			lay.activates = this.#calcActivates(inputs,lay);
+		this.layers.forEach( (lay,i) => {
+			lay.activates = this.#calcActivates(inputs,lay,i);
 			inputs = lay.activates;
 		});
 		outputs = inputs;
@@ -224,14 +222,15 @@ class NeuralNetwork_CounterProp extends NeuralNetwork {
 
 	_counterProp(inputs, outputs, speedA=0.14, speedB=0.01, layers=this.layers) {
 
+		const last = this.layers.length - 1;
 		const grossbergWeights = []; //для составления графиков
 		const weightBack = {
 			grossberg: null, cohonen: null
 		};
 
 		inputs = this.#normalize(inputs); //нормализованный вектор
-		layers.forEach( (lay) => {
-			if (lay.constructor.name === 'OutputLayer') { //cлой Гроссберга
+		layers.forEach( (lay,i) => {
+			if (last === i) { //cлой Гроссберга
 				
 				const index = inputs.indexOf(Math.max(...inputs)); //индекс выигравшего нейрона слоя Кохонена
 				const weights = lay.weights; //массив всех весов слоя
@@ -244,18 +243,24 @@ class NeuralNetwork_CounterProp extends NeuralNetwork {
 					grossbergWeights.push(weight);
 				}
 
+				// const bias = lay.bias[index]; //биас соединенный с выигравшим нейроном слоя Кохонена
+				// lay.bias[index] = bias+speedA*(1/inputs.length-bias); //новый биас
+
 				weightBack.grossberg = grossbergWeights.reduce((sum,a) => sum+a, 0) / grossbergWeights.length;
 
 				return;
 			}
 
-			const activates = this.#calcActivates(inputs,lay); //рассчет активаций
+			const activates = this.#calcActivates(inputs,lay,i); //рассчет активаций
 			const index = activates.indexOf(Math.max(...activates)); //индекс выигравшего нейрона слоя Кохонена
 			const weightsCohonen = lay.weights; //все веса слоя Кохонена (для графика)
 			let weights = weightsCohonen[index]; //веса соединенные с выигравшим нейроном слоя Кохонена
 
 			weights = weights.map((weight,i) => weight+speedA*(inputs[i]-weight) ); //рассчитываем новые веса
 			lay.weights[index] = weights;
+
+			const bias = lay.bias[index]; //биас соединенный с выигравшим нейроном слоя Кохонена
+			lay.bias[index] = bias+speedA*(1/inputs.length-bias); //новый биас
 			
 			inputs = activates;
 
@@ -267,7 +272,7 @@ class NeuralNetwork_CounterProp extends NeuralNetwork {
 		return [weightBack.grossberg, weightBack.cohonen];
 	}
 
-	train({ data, iteration=300, speedA=0.14, speedB=0.1}) {
+	train({ data, epochs=300, speedA=0.14, speedB=0.01}) {
 		const chartItems = {
 			grossbergWeights: [],
 			cohonenWeights: [],
@@ -284,10 +289,9 @@ class NeuralNetwork_CounterProp extends NeuralNetwork {
 			]},
 		];
 
-		for(let i=0; i<iteration; i++) {
+		for(let i=0; i<epochs; i++) {
 			data.forEach( (item) => {
 				const {inputs, outputs} = item;
-
 				const [grossbergWeight, cohonenWeight] = this._counterProp(inputs,outputs,speedA,speedB);
 
 				chartItems.grossbergWeights.push(grossbergWeight);
@@ -369,7 +373,7 @@ class Hamming extends NeuralNetwork {
 			});
 		}
 
-		const calcActivate = (inputs,lay) => { //рассчет активации нейронов в слое
+		const calcActivates = (inputs,lay) => { //рассчет активации нейронов в слое
 			const activates = [];
 			const { cnt, weights} = lay; //количество нейронов в слое; веса
 
@@ -384,12 +388,12 @@ class Hamming extends NeuralNetwork {
 		const T = inputs.length / 2;
 		const layers = this.layers;
 
-		let activates = calcActivate(inputs, layers[0]); //активации первого слоя
+		let activates = calcActivates(inputs, layers[0]); //активации первого слоя
 		let lengthVector;
 		let cnt = 0; //количество итераций
 
 		do {
-			const newActivates = calcActivate(activates, layers[1]); //активации после категорий
+			const newActivates = calcActivates(activates, layers[1]); //активации после категорий
 
 			const diffVector = //разность векторов
 				math.add(newActivates,math.multiply(activates,-1))
@@ -444,7 +448,7 @@ class BAM extends NeuralNetwork {
 			return true;
 		};
 
-		console.log(A.map(vector => this.#sigmoid(vector))); //лог входного вектора А
+		// console.log(A.map(vector => this.#sigmoid(vector))); //лог входного вектора А
 		let cnt = 0;
 
 		let W = this.layers[0].weights; //веса
@@ -466,8 +470,8 @@ class BAM extends NeuralNetwork {
 			cnt += 1;
 		}
 		
-		console.log(cnt); //количество итераций для нахождения эквиваленции
-		console.log(newB); //лог выходного вектора B, ассоциированного с А
+		// console.log(cnt); //количество итераций для нахождения эквиваленции
+		// console.log(newB); //лог выходного вектора B, ассоциированного с А
 
 		return newB;
 	}
@@ -489,7 +493,7 @@ class BAM extends NeuralNetwork {
 
 }
 
-module.exports.NeuralNetwork_BackProp = NeuralNetwork_BackProp;
-module.exports.NeuralNetwork_CounterProp = NeuralNetwork_CounterProp;
+module.exports.NeuralNetwork = BackProp;
+module.exports.CounterProp = CounterProp;
 module.exports.Hamming = Hamming;
 module.exports.BAM = BAM;

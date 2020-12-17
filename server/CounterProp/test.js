@@ -1,4 +1,4 @@
-const { NeuralNetwork_CounterProp: NeuralNetwork } = require('../NeuralNetwork.js');
+const { CounterProp } = require('../NeuralNetwork.js');
 const fs = require('file-system');
 const PNG = require('pngjs').PNG;
 
@@ -75,7 +75,7 @@ const db = [
     {inputs: [0,0,0,0,0,1,0,0,0,1,0,1,1,1,0,0,1,1,1,0,0,0,0,0,0], outputs: [0,1,0,0,0]},
     {inputs: [0,0,0,0,0,0,1,0,1,0,1,1,1,1,1,0,1,1,1,0,0,0,1,0,0], outputs: [0,0,1,0,0]},
     {inputs: [0,0,1,0,0,0,1,1,1,0,1,1,0,1,1,0,1,1,1,0,0,0,1,0,0], outputs: [0,0,0,1,0]},
-    {inputs: [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0], outputs: [0,0,0,0,1]}
+    {inputs: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], outputs: [0,0,0,0,1]}
 ];
 
 //const db = JSON.parse(fs.readFileSync('../db.json'));
@@ -84,7 +84,7 @@ let done = false;
 let def;
 
 while (!done) {
-    const net = new NeuralNetwork();
+    const net = new CounterProp();
     net.init({
 		input_cnt: 25,
 		output_cnt: 5,
@@ -93,7 +93,7 @@ while (!done) {
     
     const chart = net.train({
         data: db,
-        iteration: 300,
+        epochs: 75,
         speedA: 0.14,
         speedB: 0.01
     });
@@ -105,7 +105,7 @@ while (!done) {
     test.push(net.run(db[3].inputs));
     test.push(net.run(db[4].inputs));
 
-    //console.log(test);
+    console.log(test);
 
     test = test.map( ans => {
         return ans.indexOf(Math.max(...ans));

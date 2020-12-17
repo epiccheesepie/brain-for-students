@@ -85,7 +85,7 @@ function addNoise(db,q) { //quantity
 		// }
 		// return {A: [newA], B};
 
-		const newB = B.flat();
+		const newB = A.flat();
 
 		for (let i=0;i<q;i++) {
 			if (newB[i] === 1) {
@@ -94,7 +94,7 @@ function addNoise(db,q) { //quantity
 				newB[i] = 1;
 			}
 		}
-		return {A, B: [newB]};
+		return {A: [newB], B};
 	});
 }
 
@@ -131,7 +131,7 @@ net.train(db);
 
 const defAnswer = ([vector]) => {
 	return vector.map(val => {
-		if (val < 0.00001) return -1;
+		if (val < 0.001) return -1;
 		else return 1;
 	});
 };
@@ -151,17 +151,27 @@ const chart = [
 test_db.forEach(({q,db}) => {
 	let rightCnt = 0;
 	db.forEach( (val) => {
-		const answer = defAnswer(net.run(val.B));
-		const B = val.A.flat();
+		// const answer = defAnswer(net.run(val.B));
+		// const B = val.A.flat();
+		// if (arraysEqual(answer,B)) {
+		// 	rightCnt += 1;
+		// }
+
+		const answer = defAnswer(net.run(val.A));
+		const B = val.B.flat();
+		
 		if (arraysEqual(answer,B)) {
 			rightCnt += 1;
 		}
 	});
 
-	chart.push([+q,+(rightCnt/5 * 100).toFixed(0)]);
+	chart.push([+q,+(rightCnt/db.length * 100).toFixed(0)]);
 });
 
-fs.writeFileSync('./chartB.json', JSON.stringify(chart));
+console.log(chart);
+// console.log(net.run(db_noise_1[0].A));
+
+// fs.writeFileSync('./chartB.json', JSON.stringify(chart));
 
 
 

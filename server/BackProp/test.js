@@ -1,4 +1,4 @@
-const { NeuralNetwork_BackProp: NeuralNetwork } = require('../NeuralNetwork.js');
+const { NeuralNetwork } = require('../NeuralNetwork.js');
 const fs = require('file-system');
 const PNG = require('pngjs').PNG;
 
@@ -70,7 +70,7 @@ function tests(net, dir) {
 
 }
 
-const db = JSON.parse(fs.readFileSync('../db.json'));
+const db = JSON.parse(fs.readFileSync('./db.json'));
 
 // const db = [
 //     {input: [1,1,1,1,1,1,1,1,1,1,1,0,1,0,1,1,1,1,1,1,1,1,1,1,1], output: [1,0,0,0,0]},
@@ -80,6 +80,7 @@ const db = JSON.parse(fs.readFileSync('../db.json'));
 //     {input: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], output: [0,0,0,0,1]}
 // ];
 
+
 let done = false;
 let def;
 
@@ -87,9 +88,9 @@ while (!done) {
     const net = new NeuralNetwork();
     net.init({
 		input_cnt: 25,
-		output_cnt: 5,
+		output_cnt: 25,
 		hidden_cnt: 1,
-		hidden_neurons_cnt: 25
+		hidden_neurons_cnt: 50
 	});
     // console.log(net.run(db[0].input));
     // console.log(net.run(db[1].input));
@@ -102,27 +103,66 @@ while (!done) {
         speed: 0.14
     });
 
-    let test = [];
-    test.push(net.run(db[0].inputs));
-    test.push(net.run(db[1].inputs));
-    test.push(net.run(db[2].inputs));
-    test.push(net.run(db[3].inputs));
-    test.push(net.run(db[4].inputs));
+	let test = [];
+	
+	const threshold = (vector) => {
+		return vector.map(x => {
+			if (x < 0.09) return 0;
+			else return 1;
+		});
+	};
 
+    test.push(threshold(net.run(db[0].inputs)));
+    test.push(threshold(net.run(db[1].inputs)));
+    test.push(threshold(net.run(db[2].inputs)));
+    test.push(threshold(net.run(db[3].inputs)));
 
-    test = test.map( ans => {
-        return ans.indexOf(Math.max(...ans));
-    });
+	console.log(count);
+
+	const arraysEqual = (a,b) => {
+		for (let i=0; i<a.length; i++) {
+			if (a[i] !== b[i]) return 0;
+		}
+		return 1;
+	};
+
+	test = test.map((output,i) => {
+		if (arraysEqual(output, db[i].inputs)) {
+			return 1;
+		} else {
+			return 0;
+		}
+	});
 
 	console.log(test);
-	console.log(count);
-    
-	done = (test.join('') === '01234');
+
+	done = (test.join('') === '1111');
 	// fs.writeFileSync('./chartSam.json', JSON.stringify(chart));
 	// net.save('./Sam.json');
 	def = net;
 }
 
-tests(def,'../../src/png/1');
-tests(def,'../../src/png/3');
+// const db = [
+// 	{"inputs":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+//         "outputs":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1]}
+// ];
+// const net = new NeuralNetwork();
+// net.init({
+// 	input_cnt: 25,
+// 	output_cnt: 25,
+// 	hidden_cnt: 1,
+// 	hidden_neurons_cnt: 50
+// });
+
+// const [ cnt ] = net.train({
+// 	data: db,
+// 	speed: 0.14
+// });
+// console.log(net.run(db[0].inputs));
+// console.log(cnt);
+
+// console.log(net.run(db[0].inputs));
+
+// tests(def,'../../src/png/1');
+// tests(def,'../../src/png/3');
 
