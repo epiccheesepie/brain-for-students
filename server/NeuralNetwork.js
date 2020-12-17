@@ -123,7 +123,7 @@ class BackProp extends DeepNeuralNetwork {
 		return outputs;
 	}
 
-	train({ data, err=0.01, speed }) { //тренировка сети
+	train({ data, err=0.01, speed=0.14 }) { //тренировка сети
 		const chart = [ //график зависимости итераций от ошибки для google charts
 			['Итерация', 'Ошибка']
 		];

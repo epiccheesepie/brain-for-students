@@ -98,10 +98,12 @@ while (!done) {
     // console.log(net.run(db[3].input));
     // console.log(net.run(db[4].input));
     
-    const [count, chart] = net.train({
-        data: db,
-        speed: 0.14
-    });
+	const [count, chart] = 
+		net.train({
+			data: db,
+			err: 0.05,
+			speed: 0.14
+		});
 
 	let test = [];
 	
