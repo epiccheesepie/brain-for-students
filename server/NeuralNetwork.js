@@ -6,6 +6,20 @@ class NeuralNetwork {
 		this.layers = layers;
 	}
 
+	sigmoid(vector) { //сигмоида
+		return vector.map(x => {
+			return 1/(1+math.exp(-x));
+		});
+	}
+
+	threshold(vector) { //пороговая функция
+		return vector.map(val => {
+			if (val > 0) return 1;
+			else if (val < 0) return 0;
+			else if (val === 0) return 0;
+		});
+	}
+
 	save(path) { //сохранение слоев
 		fs.writeFileSync(path, JSON.stringify(this.layers));
 	}
@@ -47,7 +61,36 @@ class OutputLayer extends Layer {
 	}
 }
 
-class BackProp extends NeuralNetwork {
+class SimpleNeuralNetwork extends NeuralNetwork {
+
+	calcActivates(inputs, lay, func) {
+		const activates = [];
+		const { cnt, weights } = lay;
+
+		for (let i=0; i<cnt; i++) {
+			const net = math.multiply(inputs, weights[i]);
+			activates.push(net);
+		}
+
+		return func(activates);
+	}
+}
+class DeepNeuralNetwork extends NeuralNetwork {
+
+	calcActivates(inputs, lay, func) {
+		const activates = [];
+		const { cnt, weights, bias } = lay;
+
+		for (let i=0; i<cnt; i++) {
+			const net = math.add(math.multiply(inputs,weights[i]), bias[i]); //умножение инпутов и весов + биас
+			activates.push(net);
+		}
+
+		return func(activates);
+	}
+}
+
+class BackProp extends DeepNeuralNetwork {
 
 	init({ input_cnt, output_cnt, hidden_cnt, hidden_neurons_cnt }) { //начальная инициализация
 		const layers = this.layers;
@@ -67,23 +110,11 @@ class BackProp extends NeuralNetwork {
 
 	run(inputs) { //определение результата
 
-		const calcActivates = (inputs,lay) => { //рассчет активации нейронов в слое
-			const activates = [];
-			const { cnt, weights, bias } = lay; //количество нейронов в слое; веса; биас
-
-			for (let i=0; i<cnt; i++) {
-				// const net = math.multiply(inputs,weights[i]);
-				const net = math.add(math.multiply(inputs,weights[i]), bias[i]); //умножение инпутов и весов + биас
-				const x = 1/(1+math.exp(-net)); //функция активации (сигмоида)
-				activates.push(x);
-			}
-
-			return activates;
-		};
+		const func = this.sigmoid; //функция активации
 
 		const layers = this.layers;
 		layers.forEach( (lay) => {
-            const activates = calcActivates(inputs,lay);
+            const activates = this.calcActivates(inputs, lay, func);
             lay.activates = activates;
             inputs = activates;
         });
@@ -167,7 +198,7 @@ class BackProp extends NeuralNetwork {
 	}
 }
 
-class CounterProp extends NeuralNetwork {
+class CounterProp extends SimpleNeuralNetwork {
 
 	init({ input_cnt, output_cnt, hidden_neurons_cnt }) { //начальная инициализация
 		const layers = this.layers;
@@ -184,35 +215,24 @@ class CounterProp extends NeuralNetwork {
 		layers.push(grossberg);
 	}
 
-	#calcActivates(inputs, lay, i) {
-		const last = this.layers.length - 1;
-		const activates = [];
-		const { cnt, weights, bias } = lay;
-
-		for (let i=0;i<cnt;i++) {
-			const net = math.multiply(inputs,weights[i]); //умножение инпутов и весов
-			// const net = math.add(math.multiply(inputs,weights[i]), bias[i]); //умножение инпутов и весов + биас
-			activates.push(net); //запись в нейроны
-		}
-
-		if (last === i) {
-			return activates;
-		}
-
-		const index = activates.indexOf(Math.max(...activates)); //индекс максимального
-		return activates.map( (value, i) => {
-			return (i === index) ? 1 : 0; //если индекс максимальный то 1, если нет 0
-		});
-	}
-
 	#normalize(inputs) {
 		return inputs.map( (x) => x/inputs.length);
 	}
 
 	run(inputs) { //определение результата
+		const func = this.sigmoid; //функция активации
+		const last = this.layers[this.layers.length-1];
 		let outputs = [];
+
 		this.layers.forEach( (lay,i) => {
-			lay.activates = this.#calcActivates(inputs,lay,i);
+			let activates = this.calcActivates(inputs, lay, func);
+			if (!(last === i)) { //если слой Кохонена
+				const index = activates.indexOf(Math.max(...activates)); //индекс максимального
+				activates = activates.map( (value, i) => {
+					return (i === index) ? 1 : 0; //если индекс максимальный то 1, если нет 0
+				});
+			}
+			lay.activates = activates;
 			inputs = lay.activates;
 		});
 		outputs = inputs;
@@ -222,6 +242,7 @@ class CounterProp extends NeuralNetwork {
 
 	_counterProp(inputs, outputs, speedA=0.14, speedB=0.01, layers=this.layers) {
 
+		const func = this.sigmoid; //функция активации
 		const last = this.layers.length - 1;
 		const grossbergWeights = []; //для составления графиков
 		const weightBack = {
@@ -243,24 +264,18 @@ class CounterProp extends NeuralNetwork {
 					grossbergWeights.push(weight);
 				}
 
-				// const bias = lay.bias[index]; //биас соединенный с выигравшим нейроном слоя Кохонена
-				// lay.bias[index] = bias+speedA*(1/inputs.length-bias); //новый биас
-
 				weightBack.grossberg = grossbergWeights.reduce((sum,a) => sum+a, 0) / grossbergWeights.length;
 
 				return;
 			}
 
-			const activates = this.#calcActivates(inputs,lay,i); //рассчет активаций
+			const activates = this.calcActivates(inputs, lay, func); //рассчет активаций
 			const index = activates.indexOf(Math.max(...activates)); //индекс выигравшего нейрона слоя Кохонена
 			const weightsCohonen = lay.weights; //все веса слоя Кохонена (для графика)
 			let weights = weightsCohonen[index]; //веса соединенные с выигравшим нейроном слоя Кохонена
 
 			weights = weights.map((weight,i) => weight+speedA*(inputs[i]-weight) ); //рассчитываем новые веса
 			lay.weights[index] = weights;
-
-			const bias = lay.bias[index]; //биас соединенный с выигравшим нейроном слоя Кохонена
-			lay.bias[index] = bias+speedA*(1/inputs.length-bias); //новый биас
 			
 			inputs = activates;
 
@@ -316,7 +331,7 @@ class CounterProp extends NeuralNetwork {
 	}
 }
 
-class Hamming extends NeuralNetwork {
+class Hamming extends SimpleNeuralNetwork {
 
 	init({ input_cnt, output_cnt }) { //начальная инициализация
 		const defineWeight = _ => { //чем заполнить начальные веса
@@ -373,27 +388,15 @@ class Hamming extends NeuralNetwork {
 			});
 		}
 
-		const calcActivates = (inputs,lay) => { //рассчет активации нейронов в слое
-			const activates = [];
-			const { cnt, weights} = lay; //количество нейронов в слое; веса
-
-			for (let i=0; i<cnt; i++) {
-				const net = math.multiply(inputs,weights[i]); //умножение инпутов и весов
-				activates.push(net);
-			}
-
-			return thresholdFunc(activates);
-		};
-
 		const T = inputs.length / 2;
 		const layers = this.layers;
 
-		let activates = calcActivates(inputs, layers[0]); //активации первого слоя
+		let activates = this.calcActivates(inputs, layers[0], thresholdFunc); //активации первого слоя
 		let lengthVector;
 		let cnt = 0; //количество итераций
 
 		do {
-			const newActivates = calcActivates(activates, layers[1]); //активации после категорий
+			const newActivates = this.calcActivates(activates, layers[1], thresholdFunc); //активации после категорий
 
 			const diffVector = //разность векторов
 				math.add(newActivates,math.multiply(activates,-1))
@@ -405,7 +408,7 @@ class Hamming extends NeuralNetwork {
 
 		} while (lengthVector > 0.1);
 
-		return reduceOutput(activates);
+		return activates;
 	}
 }
 
@@ -434,10 +437,12 @@ class BAM extends NeuralNetwork {
 
 	run(A) {
 
+		const func = this.threshold; //функция активации
+
 		const calcVectors = (vector, W, Wt) => {
 			const newA = math.multiply(vector, Wt); //нахождение нового вектора A
 			const newB = math.multiply(newA, W); //нахождение нового вектора B
-			return [newA.map(vector => this.#sigmoid(vector)), newB.map(vector => this.#sigmoid(vector))];
+			return [newA.map(vector => func(vector)), newB.map(vector => func(vector))];
 		};
 
 		const arraysEqual = ([a],[b]) => {
@@ -459,7 +464,7 @@ class BAM extends NeuralNetwork {
 			[W, Wt] = [Wt, W];
 		}
 
-		B = math.multiply(A,W).map(vector => this.#sigmoid(vector)); //первое вычисление B
+		B = math.multiply(A,W).map(vector => func(vector)); //первое вычисление B
 		[ newA, newB ] = calcVectors(B, W, Wt); //новые вычисления A и B
 
 		while (!arraysEqual(A, newA) && !arraysEqual(B, newB)) { //проверка на эквиваленцию
@@ -475,22 +480,6 @@ class BAM extends NeuralNetwork {
 
 		return newB;
 	}
-
-
-	#threshold(vector) { //пороговая функция
-		return vector.map(val => {
-			if (val > 0) return 1;
-			else if (val < 0) return 0;
-			else if (val === 0) return 0;
-		});
-	}
-
-	#sigmoid(vector) { //сигмоида
-		return vector.map(x => {
-			return 1/(1+math.exp(-x));
-		});
-	}
-
 }
 
 module.exports.NeuralNetwork = BackProp;
